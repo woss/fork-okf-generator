@@ -13,8 +13,8 @@ Add to your repo root `AGENTS.md`:
 This codebase has an OKF v0.1 knowledge bundle at `./okf_bundle/`.
 
 Before working on ANY class, function, or module:
-1. Look it up: `python scripts/okf_lookup.py <ConceptName>`
-2. If unsure of name: `python scripts/okf_lookup.py --file path/to/source.py`
+1. Look it up: `okf lookup <ConceptName>`
+2. If unsure of name: `okf lookup --file path/to/source.py`
 3. For full map: `cat ./okf_bundle/SUMMARY.md`
 
 This gives you the exact signature, docstring, params, returns, and
@@ -30,7 +30,7 @@ mkdir -p .opencode/commands
 ### lookup.md — find any concept by name
 ```markdown
 Look up an exact concept in the OKF knowledge bundle.
-RUN python scripts/okf_lookup.py --bundle ./okf_bundle $NAME
+RUN okf lookup --bundle ./okf_bundle $NAME
 ```
 
 Usage in OpenCode: `/lookup NAME=WorldBankConnector`
@@ -38,7 +38,7 @@ Usage in OpenCode: `/lookup NAME=WorldBankConnector`
 ### lookup-file.md — all concepts from one file
 ```markdown
 Show all OKF concepts extracted from a source file.
-RUN python scripts/okf_lookup.py --bundle ./okf_bundle --file $FILE
+RUN okf lookup --bundle ./okf_bundle --file $FILE
 ```
 
 Usage: `/lookup-file FILE=StockAI/RnD/python/connectors/economic_data.py`
@@ -46,7 +46,7 @@ Usage: `/lookup-file FILE=StockAI/RnD/python/connectors/economic_data.py`
 ### lookup-class.md — find classes by keyword
 ```markdown
 Find all Class concepts matching a keyword.
-RUN python scripts/okf_lookup.py --bundle ./okf_bundle --type Class --compact $NAME
+RUN okf lookup --bundle ./okf_bundle --type Class --compact $NAME
 ```
 
 Usage: `/lookup-class NAME=connector`
@@ -80,7 +80,7 @@ Usage: `/prime-domain DOMAIN=StockAI/RnD/python/connectors`
 If you're building a custom agent that reads OKF concepts:
 
 ```bash
-python scripts/okf_lookup.py --json WorldBankConnector
+okf lookup --json WorldBankConnector
 ```
 
 Returns structured JSON:

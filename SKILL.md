@@ -24,30 +24,30 @@ AI agents like OpenCode.
 codebase
    |
    v
-okf_generator.py  -->  okf_bundle/          (domain/resource-path layout)
-                              |
-                       okf_lookup.py         (zero-LLM concept search)
-                              |
-                       okf_to_pairs.py  -->  okf_pairs.jsonl  (training data)
+okf generate  -->  okf_bundle/          (domain/resource-path layout)
+                       |
+                okf lookup               (zero-LLM concept search)
+                       |
+                okf pairs          -->  okf_pairs.jsonl  (training data)
 ```
 
-## Scripts
+## CLI Reference
 
-All scripts live in `scripts/`. Read their docstrings for full options.
+All features via single `okf` CLI (installed from PyPI).
 
-| Script | Purpose |
-|--------|---------|
-| `okf_generator.py` | Scan codebase and write OKF bundle |
-| `okf_lookup.py` | Search bundle and return exact concept |
-| `okf_to_pairs.py` | Convert bundle to JSONL training pairs |
+| Command | Purpose |
+|---------|---------|
+| `okf generate` | Scan codebase and write OKF bundle |
+| `okf lookup` | Search bundle and return exact concept |
+| `okf pairs` | Convert bundle to JSONL training pairs |
+| `okf summarize` | Regenerate SUMMARY.md from existing bundle |
 
 ## Dependencies
 
 ```bash
-pip install pyyaml tree-sitter \
-  tree-sitter-python tree-sitter-javascript tree-sitter-typescript \
-  tree-sitter-go tree-sitter-java tree-sitter-rust tree-sitter-ruby \
-  tqdm openai
+pip install okf-generator
+# With LLM enrichment:
+pip install okf-generator[llm]
 ```
 
 ---
@@ -58,7 +58,7 @@ pip install pyyaml tree-sitter \
 
 ### Static extraction (no LLM — always run this first)
 ```bash
-python scripts/okf_generator.py <source_dir> <output_dir>
+okf generate <source_dir> <output_dir>
 ```
 
 ### With LLM enrichment (fills missing docstrings and descriptions)
@@ -68,7 +68,7 @@ OKF_BASE_URL="http://localhost:8080/v1" \
 OKF_API_KEY="llamabarn" \
 OKF_MODEL="ggml-org/gemma-3-4b-it-qat-GGUF:Q4_0" \
 OKF_MAX_WORKERS=2 \
-python scripts/okf_generator.py <source_dir> <output_dir>
+okf generate <source_dir> <output_dir>
 ```
 
 Enrichment is **resumable** — rerun safely if interrupted. Already-enriched
@@ -106,25 +106,25 @@ prime OpenCode with exact concept context before editing code.
 
 ```bash
 # Full detail — signature, docstring, params, returns, related
-python scripts/okf_lookup.py WorldBankConnector
+okf lookup WorldBankConnector
 
 # All concepts from one source file
-python scripts/okf_lookup.py --file StockAI/RnD/python/connectors/economic_data.py
+okf lookup --file StockAI/RnD/python/connectors/economic_data.py
 
 # Filter by type
-python scripts/okf_lookup.py --type Class connector
+okf lookup --type Class connector
 
 # Filter by tag
-python scripts/okf_lookup.py --tag lang:python --tag type:Function fetch
+okf lookup --tag lang:python --tag type:Function fetch
 
 # Compact list (many results)
-python scripts/okf_lookup.py --compact connector
+okf lookup --compact connector
 
 # JSON output (programmatic / agent use)
-python scripts/okf_lookup.py --json WorldBankConnector
+okf lookup --json WorldBankConnector
 
 # Custom bundle path
-python scripts/okf_lookup.py --bundle ./Knowlege/okf_bundle WorldBankConnector
+okf lookup --bundle ./Knowlege/okf_bundle WorldBankConnector
 ```
 
 Default bundle path: `./okf_bundle`. Also auto-tries `./Knowlege/okf_bundle`
@@ -138,7 +138,7 @@ and `./knowledge/okf_bundle`.
 
 ```bash
 # Static only (instant, no LLM)
-SKIP_SYNTH=1 python scripts/okf_to_pairs.py <bundle_dir> output.jsonl
+SKIP_SYNTH=1 okf pairs <bundle_dir> output.jsonl
 
 # With LLM (QA, doc, summarize pairs)
 SYNTH_BASE_URL="http://localhost:8080/v1" \
@@ -146,10 +146,10 @@ SYNTH_API_KEY="llamabarn" \
 SYNTH_MODEL="ggml-org/gemma-3-4b-it-qat-GGUF:Q4_0" \
 MAX_WORKERS=2 \
 QA_PER_CONCEPT=3 \
-python scripts/okf_to_pairs.py <bundle_dir> output.jsonl
+okf pairs <bundle_dir> output.jsonl
 
 # Specific pair types only
-PAIR_TYPES="codegen,qa" python scripts/okf_to_pairs.py <bundle_dir> output.jsonl
+PAIR_TYPES="codegen,qa" okf pairs <bundle_dir> output.jsonl
 ```
 
 ### Pair types
@@ -167,7 +167,7 @@ PAIR_TYPES="codegen,qa" python scripts/okf_to_pairs.py <bundle_dir> output.jsonl
 ## Task: Regenerate SUMMARY.md Only
 
 ```bash
-python scripts/okf_generator.py --summarize <bundle_dir>
+okf summarize <bundle_dir>
 ```
 
 Use after enrichment finishes to refresh the summary without re-scanning.
@@ -181,11 +181,11 @@ See `references/opencode-integration.md` for full setup.
 Quick setup:
 ```bash
 # 1. Add to AGENTS.md (auto-loaded by OpenCode)
-echo "OKF bundle at ./okf_bundle — use: python scripts/okf_lookup.py <Name>" >> AGENTS.md
+echo "OKF bundle at ./okf_bundle — use: okf lookup <Name>" >> AGENTS.md
 
 # 2. Add lookup command
 mkdir -p .opencode/commands
-echo "RUN python scripts/okf_lookup.py --bundle ./okf_bundle \$NAME" \
+echo "RUN okf lookup --bundle ./okf_bundle \$NAME" \
   > .opencode/commands/lookup.md
 ```
 
@@ -207,7 +207,8 @@ echo "RUN python scripts/okf_lookup.py --bundle ./okf_bundle \$NAME" \
 ## Troubleshooting
 
 **No concepts found**: Check that source dir is not inside a SKIP_DIRS name
-(node_modules, .venv, dist, etc).
+(node_modules, .venv, dist, etc). Leading path components like `/tmp` are
+no longer skipped (fixed in v0.1.3).
 
 **Enrichment slow**: Use `OKF_MAX_WORKERS=1`. Local models process ~1 request
 at a time. At 32 tok/sec expect ~3-5s per concept.
