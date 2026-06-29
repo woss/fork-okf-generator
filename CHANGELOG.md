@@ -10,8 +10,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 - C# / Swift / Kotlin parsers
 - `okf --version` flag
-- GitHub Actions CI/CD with automated PyPI release
 - mkdocs documentation site
+
+---
+
+## [0.1.8] — 2026-06-29
+
+### Fixed
+- JS/TS parser cache poison — `_lang_obj` class attribute leaked TypeScript grammar into subsequent JS parses (H3)
+- `okf pairs` `_lang()` never matched tags — tags stored as `lang:python` but checked bare `python` (H4)
+- Go interfaces stamped as `Class` instead of `Interface` (H1)
+- LLM enrichment crash on `None` API response — `.strip()` on nullable `message.content` (H7)
+- Version drift — `cli.py` hardcoded `v0.1.6+`, `__init__.py` had stale 0.1.6 (H6)
+- Fence hardcoded to `python` in concept signatures — now uses actual concept language
+- `_sig()` only stripped ````python` fences — regex now strips any language fence
+- Bare `except:` at 6 locations (captured `KeyboardInterrupt` etc.) → `except Exception:`
+- Dead `if/else` in `_concept_output_path` — both branches identical
+
+### Changed
+- Unused imports removed: `hashlib`, `dedent`, `Optional`
+- `defaultdict` import hoisted from function to module level
+- `f.flush()` after every `f.write()` in `okf pairs` for crash-safe partial output
+
+---
+
+## [0.1.7] — 2026-06-29
+
+### Added
+- One-liner curl install: `curl -fsSL https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/scripts/install.sh | bash`
+- `scripts/install.sh` — installs okf-generator + Claude Code skill in one shot
+
+### Changed
+- README badges fixed — test badge URL now uses correct repo case (`UmairBaig8`)
+- README install section leads with the one-liner
+
+### Fixed
+- `tqdm` missing import in `generator.py:1583` — crashed on any `OKF_ENRICH=1` run
+
+---
+
+## [0.1.6] — 2026-06-29
+
+### Added
+- `okf install-skill` command — copies SKILL.md to `~/.config/opencode/skills/okf-generator/`
+
+---
+
+## [0.1.5] — 2026-06-29
+
+### Changed
+- README updated with curl-based Claude skill install instructions
+
+---
+
+## [0.1.4] — 2026-06-29
+
+### Changed
+- OpenCode integration guide and skill docs updated for `okf` CLI
+
+---
+
+## [0.1.3] — 2026-06-29
+
+### Fixed
+- Skip dirs check against relative path instead of absolute
+- Stale import causing `ModuleNotFoundError` on fresh install
+
+---
+
+## [0.1.2] — 2026-06-29
+
+### Fixed
+- Absolute URL for banner image in README
+
+---
+
+## [0.1.1] — 2026-06-29
+
+### Changed
+- Initial PyPI release plumbing
 
 ---
 
@@ -36,5 +113,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/umairbaig/okf-generator/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/umairbaig/okf-generator/releases/tag/v0.1.0
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.8
+[0.1.7]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.7
+[0.1.6]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.6
+[0.1.5]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.5
+[0.1.4]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.4
+[0.1.3]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.3
+[0.1.2]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.2
+[0.1.1]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.1
+[0.1.0]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.0
