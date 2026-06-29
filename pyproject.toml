@@ -1,0 +1,83 @@
+[build-system]
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name            = "okf-generator"
+version         = "0.1.0"
+description     = "Generate OKF v0.1 knowledge bundles from codebases — Claude skill + OpenCode integration"
+readme          = "README.md"
+license         = { text = "MIT" }
+requires-python = ">=3.11"
+authors         = [{ name = "Umair Baig" }]
+keywords        = [
+    "okf", "open-knowledge-format", "codebase-indexing",
+    "llm", "training-data", "opencode", "claude-skill",
+    "tree-sitter", "code-knowledge", "ai-agent",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Documentation",
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "tqdm>=4.0",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-python>=0.25.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+    "tree-sitter-go>=0.23.0",
+    "tree-sitter-java>=0.23.0",
+    "tree-sitter-rust>=0.23.0",
+    "tree-sitter-ruby>=0.23.0",
+]
+
+[project.optional-dependencies]
+llm = [
+    "openai>=1.0.0",     # for LLM enrichment + training pairs
+]
+dev = [
+    "pytest>=7.0",
+    "hatch",
+    "build",
+    "twine",
+]
+all = [
+    "okf-generator[llm,dev]",
+]
+
+[project.scripts]
+okf = "okf.cli:main"
+
+[project.urls]
+Homepage      = "https://github.com/umairbaig/okf-generator"
+Documentation = "https://github.com/umairbaig/okf-generator#readme"
+Repository    = "https://github.com/umairbaig/okf-generator"
+Issues        = "https://github.com/umairbaig/okf-generator/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["okf"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "okf/",
+    "tests/",
+    "references/",
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "requirements.txt",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+python_files = ["test_*.py"]
