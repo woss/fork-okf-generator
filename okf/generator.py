@@ -1326,12 +1326,12 @@ def scan_codebase(root: Path) -> list[Concept]:
     log.info(f"Scanning {len(all_paths)} paths...")
 
     for path in all_paths:
-        # skip hidden / vendor dirs
+        # skip hidden / vendor dirs (only check relative to root, not absolute prefix)
         if any(
             part.startswith(".") or
             part in SKIP_DIRS or
             any(part.endswith(sfx) for sfx in SKIP_DIR_SUFFIXES)
-            for part in path.parts
+            for part in path.relative_to(root).parts
         ):
             continue
         if not path.is_file():
@@ -1487,7 +1487,7 @@ def main():
             sys.exit(1)
         log.info(f"Regenerating SUMMARY.md from existing bundle: {bundle_dir}")
         # load concepts from existing bundle by parsing all .md files
-        from okf_to_pairs import load_bundle as _load_md
+        from okf.pairs import load_bundle as _load_md
         raw = _load_md(bundle_dir)
         # reconstruct minimal Concept objects for summary
         regen_concepts = []
