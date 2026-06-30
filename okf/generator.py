@@ -1194,11 +1194,14 @@ def render_dir_index(
         for c in concepts:
             by_type.setdefault(c.type, []).append(c)
 
+        def _plural(t: str) -> str:
+            return "Dependencies" if t == "Dependency" else f"{t}s"
+
         for ctype in ("Module", "Class", "Function", "Method", "Dependency"):
             group = by_type.get(ctype, [])
             if not group:
                 continue
-            lines.append(f"## {ctype}s\n")
+            lines.append(f"## {_plural(ctype)}\n")
             for c in sorted(group, key=lambda x: x.title.lower()):
                 filename = c.concept_id.split("/")[-1] + ".md"
                 desc = f" — {c.description}" if c.description else ""
@@ -1263,12 +1266,16 @@ def render_summary(
     """
     ts = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    # ── Separate dependencies from code concepts ──────────────────────────
+    code_concepts = [c for c in concepts if c.type != "Dependency"]
+    dep_concepts  = [c for c in concepts if c.type == "Dependency"]
+
     # ── Group by domain → module → concepts ──────────────────────────────
     # domain  = first path segment  (e.g. "StockAI")
     # module  = resource path without extension (e.g. "StockAI/RnD/python/connectors/economic_data")
     domains: dict[str, dict[str, list[Concept]]] = defaultdict(lambda: defaultdict(list))
 
-    for c in concepts:
+    for c in code_concepts:
         parts = c.resource.replace("\\", "/").replace(os.sep, "/").split("/")
         domain = parts[0] if parts else "root"
         module = re.sub(r"\.[^/]+$", "", c.resource).replace(os.sep, "/")
@@ -1276,7 +1283,7 @@ def render_summary(
 
     # ── Stats ─────────────────────────────────────────────────────────────
     total      = len(concepts)
-    n_modules  = len({re.sub(r"\.[^/]+$", "", c.resource) for c in concepts})
+    n_modules  = len({re.sub(r"\.[^/]+$", "", c.resource) for c in code_concepts})
     n_domains  = len(domains)
     by_type    = {}
     for c in concepts:
@@ -1349,6 +1356,20 @@ def render_summary(
 
         if len(sorted_mods) > 8:
             lines.append(f"- *…and {len(sorted_mods) - 8} more modules*")
+        lines.append("")
+
+    # ── Dependencies (compact ecosystem summary) ──────────────────────────
+    if dep_concepts:
+        lines.append("## Dependencies\n")
+        lines.append("> Full list at [`_dependencies/index.md`](/_dependencies/index.md) or `okf lookup --type Dependency`\n")
+        eco_count: dict[str, int] = {}
+        for c in dep_concepts:
+            eco = c.body_extra.get("ecosystem", "?")
+            eco_count[eco] = eco_count.get(eco, 0) + 1
+        lines.append("| Ecosystem | Packages |")
+        lines.append("|----------|----------|")
+        for eco, count in sorted(eco_count.items(), key=lambda x: -x[1]):
+            lines.append(f"| {eco} | {count:,} |")
         lines.append("")
 
     # ── Key concepts (top 20 by description quality) ──────────────────────
@@ -1551,11 +1572,15 @@ def scan_codebase(root: Path) -> list[Concept]:
             try:
                 raw_deps = manifest_scanner.scan_manifest(path, root)
                 for d in raw_deps:
+                    # Merge standardised tags with ecosystem-specific tags from the scanner
+                    base = _make_tags(language="manifest", resource=d["resource"],
+                                      concept_type=d["type"], git=git)
+                    existing = set(d.get("tags", []))
+                    merged = list(dict.fromkeys(base + [t for t in existing if not t.startswith(("lang:", "type:", "module:", "domain:", "git:"))]))
                     c = Concept(
                         type=d["type"], title=d["title"],
                         description=d["description"], resource=d["resource"],
-                        tags=_make_tags(language="manifest", resource=d["resource"],
-                                        concept_type=d["type"], git=git),
+                        tags=merged,
                         timestamp=d["timestamp"], concept_id=d["concept_id"],
                         body_extra=d.get("body_extra", {}),
                     )

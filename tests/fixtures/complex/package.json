@@ -1,0 +1,13 @@
+{
+  "name": "complex-fixture",
+  "version": "0.1.0",
+  "dependencies": {
+    "express": "^4.19.0",
+    "lodash": "^4.17.21",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

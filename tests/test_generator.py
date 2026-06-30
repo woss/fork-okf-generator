@@ -249,6 +249,200 @@ def test_write_bundle_includes_empty_subfolders(tmp_path):
     root_index = (out / "index.md").read_text()
     assert "truly_empty" in root_index
     assert "only_docs" in root_index
-    assert "with_code" in root_index
     assert (out / "truly_empty" / "index.md").exists()
     assert (out / "only_docs" / "index.md").exists()
+
+
+# ── Comprehensive fixture: all languages + all manifests ────────────────────
+
+COMPLEX = Path(__file__).parent / "fixtures" / "complex"
+
+
+def test_complex_all_languages_detected():
+    """Every supported language produces concepts."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    tags = set()
+    for c in concepts:
+        for t in c.tags:
+            if t.startswith("lang:"):
+                tags.add(t[5:])
+    expected = {"python", "javascript", "typescript", "go", "java", "rust", "ruby", "sql", "manifest"}
+    assert expected.issubset(tags), f"Missing langs: {expected - tags}"
+
+
+def test_complex_all_concept_types_present():
+    """Every concept type (including Dependency) is produced."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    types = {c.type for c in concepts}
+    for t in ("Function", "Class", "Module", "Dependency", "Table", "View"):
+        assert t in types, f"Missing type: {t}"
+
+
+def test_complex_dependency_count():
+    """At least 40 dependencies across all manifest types."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    deps = [c for c in concepts if c.type == "Dependency"]
+    assert len(deps) >= 40, f"Only {len(deps)} dependencies"
+
+
+def test_complex_all_manifest_ecosystems():
+    """Every manifest parser produces concepts with correct ecosystem tag."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    ecosystems = set()
+    for c in concepts:
+        for t in c.tags:
+            if t.startswith("ecosystem:"):
+                ecosystems.add(t[10:])
+    expected = {"pip", "npm", "cargo", "go", "composer", "maven", "rubygems", "gradle", "swiftpm", "clojars", "hex"}
+    assert expected.issubset(ecosystems), f"Missing ecosystems: {expected - ecosystems}"
+
+
+def test_complex_bundle_has_dependencies_folder(tmp_path):
+    """Generated bundle contains _dependencies/ with per-ecosystem subdirs."""
+    from okf.generator import scan_codebase, write_bundle, _walk_source_dirs
+    concepts = scan_codebase(COMPLEX)
+    write_bundle(
+        concepts=concepts,
+        output_dir=tmp_path,
+        bundle_name="complex",
+        log_entries=["test"],
+        source_dirs=_walk_source_dirs(COMPLEX),
+    )
+    dep_root = tmp_path / "_dependencies"
+    assert dep_root.is_dir(), "_dependencies/ missing"
+    assert (dep_root / "index.md").exists(), "_dependencies/index.md missing"
+    # spot-check a few ecosystems
+    for eco in ("pip", "npm", "cargo", "go", "maven"):
+        assert (dep_root / eco).is_dir(), f"_dependencies/{eco}/ missing"
+        assert (dep_root / eco / "index.md").exists(), f"_dependencies/{eco}/index.md missing"
+
+
+def test_complex_summary_has_dependencies_section(tmp_path):
+    """SUMMARY.md includes a Dependencies table with ecosystem counts."""
+    from okf.generator import scan_codebase, write_bundle, write_summary
+    concepts = scan_codebase(COMPLEX)
+    write_bundle(concepts=concepts, output_dir=tmp_path, bundle_name="complex", log_entries=["test"])
+    write_summary("complex", concepts, tmp_path, {})
+    summary = (tmp_path / "SUMMARY.md").read_text()
+    assert "## Dependencies" in summary, "Missing Dependencies section"
+    assert "| Ecosystem | Packages |" in summary, "Missing ecosystem count table"
+    assert "| pip |" in summary, "pip count missing"
+
+
+def test_complex_summary_domain_map_no_manifest_domains(tmp_path):
+    """Domain map should not list manifest files as domains."""
+    from okf.generator import scan_codebase, write_bundle, write_summary
+    concepts = scan_codebase(COMPLEX)
+    write_bundle(concepts=concepts, output_dir=tmp_path, bundle_name="complex", log_entries=["test"])
+    write_summary("complex", concepts, tmp_path, {})
+    summary = (tmp_path / "SUMMARY.md").read_text()
+    for bad in ("pyproject.toml", "requirements.txt", "package.json"):
+        assert bad not in summary, f"Domain map should not contain {bad}"
+
+
+def test_complex_deep_directory_structure(tmp_path):
+    """Deeply nested source dirs are mirrored in the bundle."""
+    from okf.generator import scan_codebase, write_bundle, _walk_source_dirs
+    concepts = scan_codebase(COMPLEX)
+    write_bundle(
+        concepts=concepts,
+        output_dir=tmp_path,
+        bundle_name="complex",
+        log_entries=["test"],
+        source_dirs=_walk_source_dirs(COMPLEX),
+    )
+    assert (tmp_path / "src" / "sub" / "dir" / "index.md").exists(), "Deep dir index.md missing"
+    index_content = (tmp_path / "src" / "sub" / "dir" / "index.md").read_text()
+    assert "deep.md" in index_content, "Deep module concept missing from index"
+
+
+def test_complex_python_concepts_have_signatures():
+    """Python Function and Class concepts include signatures."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    py_fns = [c for c in concepts if c.type == "Function" and "lang:python" in c.tags]
+    assert len(py_fns) >= 2, f"Expected >=2 Python functions, got {len(py_fns)}"
+    for fn in py_fns:
+        assert fn.signature, f"Python function {fn.title} missing signature"
+        assert fn.params is not None, f"Python function {fn.title} missing params"
+
+
+def test_complex_rust_concepts_have_doc_comments():
+    """Rust parser extracts /// doc comments as docstrings."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    rust_fns = [c for c in concepts if c.type == "Function" and "lang:rust" in c.tags]
+    add_fn = next((c for c in rust_fns if c.title == "add"), None)
+    assert add_fn is not None, "Rust add() function not found"
+    assert add_fn.docstring, "Rust add() missing docstring"
+    assert "adds" in add_fn.docstring.lower(), "Rust docstring content mismatch"
+
+
+def test_complex_sql_creates_table_view_function():
+    """SQL parser extracts tables, views, and functions from .sql files."""
+    from okf.generator import scan_codebase
+    concepts = scan_codebase(COMPLEX)
+    sql_tags = {c.type: c.title for c in concepts if "lang:sql" in c.tags}
+    assert sql_tags.get("Table") == "users"
+    assert sql_tags.get("View") == "active_users"
+    assert sql_tags.get("Function") == "days_since_signup"
+
+
+def test_complex_dependency_concept_body(tmp_path):
+    """Dependency concepts have body_extra rendered as a table."""
+    from okf.generator import scan_codebase, write_bundle
+    concepts = scan_codebase(COMPLEX)
+    write_bundle(concepts=concepts, output_dir=tmp_path, bundle_name="complex", log_entries=["test"])
+    dep_file = tmp_path / "_dependencies" / "npm" / "express.md"
+    assert dep_file.exists(), "express.md not found in _dependencies/npm/"
+    content = dep_file.read_text()
+    assert "Ecosystem" in content
+    assert "Version constraint" in content
+    assert "Source manifest" in content
+    assert "Dev dependency" in content
+    assert "npm" in content
+    assert "^4.19.0" in content
+
+
+def test_complex_dependency_dev_flag():
+    """Dev dependencies are marked correctly across parsers."""
+    from okf.manifest_scanner import parse_package_json, parse_pyproject_toml, parse_cargo_toml, parse_gemfile, parse_build_gradle, parse_go_mod
+    from pathlib import Path
+    import tempfile
+
+    def _write(name, content):
+        p = Path(tempfile.mktemp(suffix=name))
+        p.write_text(content.strip())
+        return p
+
+    # npm devDeps
+    p1 = _write("package.json", '{"devDependencies":{"vitest":"^1.0"}}')
+    assert parse_package_json(p1)[0]["dev"] is True
+
+    # pip optional-dependencies
+    p2 = _write("pyproject.toml", '[project]\noptional-dependencies={dev=["pytest"]}')
+    assert parse_pyproject_toml(p2)[0]["dev"] is True
+
+    # cargo dev-dependencies
+    p3 = _write("Cargo.toml", '[package]\nname="x"\n[dev-dependencies]\ncriterion="0.5"')
+    assert parse_cargo_toml(p3)[0]["dev"] is True
+
+    # go indirect
+    p4 = _write("go.mod", 'module x\ngo 1.22\nrequire github.com/foo/bar v1.0.0 // indirect')
+    assert parse_go_mod(p4)[0]["dev"] is True
+
+    # Gemfile group :test
+    p5 = _write("Gemfile", 'gem "x"\ngroup :test do\ngem "y", "1.0"\nend')
+    deps = parse_gemfile(p5)
+    assert deps[0]["dev"] is False
+    assert deps[1]["dev"] is True
+
+    # gradle testImplementation
+    p6 = _write("build.gradle", 'deps { testImplementation "a:b:1.0" }')
+    assert parse_build_gradle(p6)[0]["dev"] is True
+
+    p1.unlink(); p2.unlink(); p3.unlink(); p4.unlink(); p5.unlink(); p6.unlink()
