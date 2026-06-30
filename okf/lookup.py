@@ -16,29 +16,29 @@ Output modes:
 
 Usage:
   # Exact / fuzzy name search
-  python okf_lookup.py WorldBankConnector
-  python okf_lookup.py world bank          # fuzzy, space-separated tokens
+  okf lookup WorldBankConnector
+  okf lookup world bank          # fuzzy, space-separated tokens
 
   # All concepts from a source file
-  python okf_lookup.py --file StockAI/RnD/python/connectors/economic_data.py
+  okf lookup --file StockAI/RnD/python/connectors/economic_data.py
 
   # Filter by type
-  python okf_lookup.py --type Class connector
+  okf lookup --type Class connector
 
   # Filter by tag
-  python okf_lookup.py --tag lang:python --tag type:Function fetch
+  okf lookup --tag lang:python --tag type:Function fetch
 
   # Change bundle dir (default: ./okf_bundle)
-  python okf_lookup.py --bundle ./Knowlege/okf_bundle WorldBankConnector
+  okf lookup --bundle ./Knowlege/okf_bundle WorldBankConnector
 
   # Compact listing (good for /lookup commands)
-  python okf_lookup.py --compact connector
+  okf lookup --compact connector
 
   # JSON output (for programmatic use)
-  python okf_lookup.py --json WorldBankConnector
+  okf lookup --json WorldBankConnector
 
   # Limit results
-  python okf_lookup.py --limit 5 fetch
+  okf lookup --limit 5 fetch
 """
 
 import argparse
@@ -432,7 +432,7 @@ def main():
             print(fmt_detail(results[0]))
         else:
             print("Tip: run with exact name for full detail, e.g.:")
-            print(f"  python okf_lookup.py --bundle {args.bundle} \"{results[0]['title']}\"")
+            print(f"  okf lookup --bundle {args.bundle} \"{results[0]['title']}\"")
         return
 
     # 1-3 results: show full detail for each
