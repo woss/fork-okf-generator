@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.13] — 2026-07-01
+
+### Fixed
+- Tip text in `okf lookup` output now shows `okf lookup ...` instead of `python okf_lookup.py`.
+
+### Changed
+- README: added `before_after.svg` comparison image and `demo.gif` terminal recording.
+
+---
+
 ## [0.1.12] — 2026-06-30
 
 ### Fixed
@@ -180,7 +190,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.12...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.13...HEAD
+[0.1.13]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.13
 [0.1.12]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.12
 [0.1.11]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.11
 [0.1.10]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.10
