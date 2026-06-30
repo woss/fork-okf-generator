@@ -68,6 +68,8 @@ from pathlib import Path
 import yaml  # PyYAML
 from tqdm import tqdm
 
+from okf import manifest_scanner
+
 log = logging.getLogger("okf_gen")
 
 
@@ -78,7 +80,7 @@ log = logging.getLogger("okf_gen")
 @dataclass
 class Concept:
     """One OKF concept (maps to one .md file)."""
-    type: str                        # Module | Function | Class | Method
+    type: str                        # Module | Function | Class | Method | Dependency
     title: str
     description: str = ""
     resource: str = ""               # relative source path
@@ -92,6 +94,7 @@ class Concept:
     returns: str = ""
     source_lines: tuple = ()         # (start, end)
     related: list[str] = field(default_factory=list)   # concept IDs to cross-link
+    body_extra: dict = field(default_factory=dict)     # type-specific fields (e.g. Dependency)
     # internal
     concept_id: str = ""             # e.g. "functions/my_func"
 
@@ -1086,6 +1089,17 @@ def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
     if concept.description:
         lines.append(f"{concept.description}\n")
 
+    if concept.type == "Dependency" and concept.body_extra:
+        be = concept.body_extra
+        lines.append("| Field | Value |")
+        lines.append("|-------|-------|")
+        lines.append(f"| Ecosystem | `{be.get('ecosystem', '')}` |")
+        lines.append(f"| Version constraint | `{be.get('version_constraint', '')}` |")
+        lines.append(f"| Source manifest | `{be.get('source_manifest', '')}` |")
+        lines.append(f"| Dev dependency | `{'yes' if be.get('dev_dependency') else 'no'}` |")
+        lines.append("")
+        return "\n".join(lines)
+
     if concept.signature:
         lines.append("## Signature\n")
         lang_fence = "python"
@@ -1180,7 +1194,7 @@ def render_dir_index(
         for c in concepts:
             by_type.setdefault(c.type, []).append(c)
 
-        for ctype in ("Module", "Class", "Function", "Method"):
+        for ctype in ("Module", "Class", "Function", "Method", "Dependency"):
             group = by_type.get(ctype, [])
             if not group:
                 continue
@@ -1533,12 +1547,28 @@ def scan_codebase(root: Path) -> list[Concept]:
             continue
         if not path.is_file():
             continue
+        if manifest_scanner.is_manifest_file(path):
+            try:
+                raw_deps = manifest_scanner.scan_manifest(path, root)
+                for d in raw_deps:
+                    c = Concept(
+                        type=d["type"], title=d["title"],
+                        description=d["description"], resource=d["resource"],
+                        tags=_make_tags(language="manifest", resource=d["resource"],
+                                        concept_type=d["type"], git=git),
+                        timestamp=d["timestamp"], concept_id=d["concept_id"],
+                        body_extra=d.get("body_extra", {}),
+                    )
+                    concepts.append(c)
+                log.debug(f"Parsed manifest {path}: {len(raw_deps)} deps")
+            except Exception as e:
+                log.warning(f"Failed to parse manifest {path}: {e}")
+            continue
         parser = _get_parser(path.suffix.lower())
         if parser is None:
             continue
         try:
             file_concepts = parser.parse_file(path, root)
-            # apply standardised tags to every concept
             for c in file_concepts:
                 c.tags = _make_tags(
                     language=parser.LANGUAGE,
