@@ -43,10 +43,12 @@ okf lookup WorldBankConnector
 ## Features
 
 - **7 languages** — Python (stdlib AST), JS/TS/Go/Java/Rust/Ruby (tree-sitter), SQL (dialect-tolerant regex)
+- **12 manifest formats** — `requirements.txt`, `pyproject.toml`, `package.json`, `Cargo.toml`, `go.mod`, `composer.json`, `pom.xml`, `Gemfile`, `build.gradle`, `Package.swift`, `project.clj`, `mix.exs` — each dependency becomes a `Dependency` concept with ecosystem, version, and dev-flag metadata
 - **Zero LLM required** for extraction — deterministic, fast, offline-capable
 - **OKF v0.1 conformant** — type, description, resource, tags, timestamp
-- **Domain/resource-path layout** — bundle mirrors your source tree exactly
+- **Domain/resource-path layout** — bundle mirrors your source tree exactly; dependencies organized in `_dependencies/{ecosystem}/` folders
 - **Resumable LLM enrichment** — enrich descriptions with any OpenAI-compat endpoint; safe to interrupt and rerun
+- **Lookup cache** — auto-caches parsed concepts; subsequent lookups skip re-parsing (~2x faster)
 - **Any AI agent** — OpenCode, Claude Code, Cursor, Windsurf, Cline, GitHub Copilot, and more
 - **Training data pipeline** — convert bundle to JSONL pairs (codegen, QA, doc, summarize, crosslink)
 - **Claude Skill included** — install `SKILL.md` to trigger the full pipeline from natural language
@@ -93,13 +95,23 @@ okf summarize ./okf_bundle
 
 ## Bundle Layout
 
-The output mirrors your source tree — not flat buckets:
+The output mirrors your source tree — dependencies get their own organized namespace:
 
 ```
 okf_bundle/
 ├── SUMMARY.md                        ← bird's-eye view for AI agents
 ├── index.md                          ← root navigation
 ├── log.md                            ← generation history
+├── _dependencies/                    ← all dependency concepts
+│   ├── index.md                      ← lists ecosystems: pip, npm, cargo, ...
+│   ├── pip/
+│   │   ├── index.md
+│   │   ├── requests.md               ← Dependency concept
+│   │   └── flask.md
+│   └── npm/
+│       ├── index.md
+│       ├── express.md
+│       └── react.md
 └── StockAI/
     └── RnD/
         └── python/
@@ -161,8 +173,8 @@ okf lookup [query] [options]
 Options:
   --bundle PATH     Bundle directory (default: ./okf_bundle)
   --file PATH       Filter by source file
-  --type TYPE       Filter by concept type: Function | Class | Module
-  --tag TAG         Filter by tag, repeatable: --tag lang:python
+  --type TYPE       Filter by concept type: Function | Class | Module | Dependency
+  --tag TAG         Filter by tag, repeatable: --tag lang:python or --tag ecosystem:npm
   --limit N         Max results (default: 10)
   --compact         One-line output per result
   --json            JSON output for programmatic use
@@ -186,7 +198,9 @@ Environment variables:
   PAIR_TYPES            Comma-separated: codegen,qa,doc,summarize,crosslink
 ```
 
-## Supported Languages
+## Supported Languages & Manifests
+
+### Code Languages
 
 | Language | Parser | Extracts |
 |----------|--------|---------|
@@ -197,6 +211,23 @@ Environment variables:
 | Rust | tree-sitter | Fns, structs, enums, traits, impl blocks, `///` |
 | Ruby | tree-sitter | Defs, classes, modules, `#` comments |
 | SQL | regex (dialect-tolerant) | `CREATE TABLE`/`VIEW`/`FUNCTION`/`PROCEDURE`/`INDEX`, preceding `--`/`/* */` comments |
+
+### Manifest / Build Files
+
+| Format | Parser | Extracts |
+|--------|--------|---------|
+| `requirements.txt` | regex | pip package names + version constraints |
+| `pyproject.toml` | `tomllib` | PEP 621 deps + optional-dependencies + Poetry legacy |
+| `package.json` | `json` | npm/Node dependencies + devDependencies |
+| `Cargo.toml` | `tomllib` | Rust crate deps + dev/build-dependencies |
+| `go.mod` | regex | Go module deps + `// indirect` flag |
+| `composer.json` | `json` | PHP packages (skips `php`/`ext-*` platform entries) |
+| `pom.xml` | `xml.etree.ElementTree` | Maven dependencies + `test`/`provided` scope → dev |
+| `Gemfile` | regex | Ruby gems + `group :test/:development` → dev |
+| `build.gradle` / `.kts` | regex | Gradle deps (Groovy + Kotlin DSL) + `testImplementation` → dev |
+| `Package.swift` | regex | SwiftPM packages from `.package(url:from:)` |
+| `project.clj` | regex | Clojars deps + `:dev` profile |
+| `mix.exs` | regex | Hex packages + `only: :dev/:test` → dev |
 
 ## LLM Enrichment
 

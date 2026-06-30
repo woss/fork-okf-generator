@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.12] — 2026-06-30
+
+### Fixed
+- Lint errors: `E402` (import order in `lookup.py`), `W291`/`W292` (trailing whitespace + missing newline in `manifest_scanner.py`).
+- Publish smoke test: `--json` query now uses `--limit 200` to avoid 10-result default truncation.
+
+### Changed
+- README: added manifest formats table (12 parsers), lookup cache feature, `_dependencies/` folder layout, Dependency type in lookup reference.
+
+---
+
 ## [0.1.11] — 2026-06-30
 
 ### Added
@@ -169,7 +180,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.11...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.12...HEAD
+[0.1.12]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.12
 [0.1.11]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.11
 [0.1.10]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.10
 [0.1.9]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.9
