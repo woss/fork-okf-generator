@@ -280,7 +280,7 @@ Environment variables:
 | Java | tree-sitter | Classes, methods, constructors, Javadoc |
 | Rust | tree-sitter | Fns, structs, enums, traits, impl blocks, `///` |
 | Ruby | tree-sitter | Defs, classes, modules, `#` comments |
-| SQL | regex (dialect-tolerant) | `CREATE TABLE`/`VIEW`/`FUNCTION`/`PROCEDURE`/`INDEX`, preceding `--`/`/* */` comments |
+| SQL | tree-sitter | Tables, views, functions, indexes, types, triggers with preceding `--`/`/* */` comments |
 
 ### Manifest / Build Files
 

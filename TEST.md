@@ -31,10 +31,19 @@ okf --help  # must print usage
 
 ---
 
-## Phase 1 — Unit Tests
+## Phase 1 — Lint + Unit Tests
 
+### 1.1 Ruff lint
 ```bash
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$WORK/..")"
+ruff check okf/ --select E,F,W --ignore E501 2>&1
+```
+
+**Verify:**
+- Exit code 0 (no lint errors).
+
+### 1.2 Pytest
+```bash
 python -m pytest tests/ -v 2>&1
 ```
 
