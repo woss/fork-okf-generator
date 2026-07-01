@@ -416,6 +416,27 @@ Project knowledge is indexed in ./okf_bundle/
   - okf lookup --type Dependency returns dependency info
 ```
 
+### Recommended system prompt
+
+When setting up agent instructions, include:
+
+```markdown
+This project has an OKF knowledge bundle at ./okf_bundle/.
+- Use `okf lookup <Name>` to get full concept context.
+- Use `okf lookup --type <Type>` to filter by type (Class, Function, Dependency).
+- Use `okf lookup --tag ecosystem:<name>` for ecosystem-specific queries.
+- Read `SUMMARY.md` for the full knowledge map.
+```
+
+### Token efficiency
+
+| Optimization | How okf-generator helps | Agent impact |
+|-------------|------------------------|--------------|
+| Deterministic types | Every concept has `type: Function`, `type: Class`, `type: Dependency` | Agent filters by type precisely |
+| Incremental access | `okf lookup <Name>` returns one concept, not whole files | Saves 80-95% token cost vs reading source |
+| Structured metadata | Signature, params, returns in YAML frontmatter | Agent extracts info without parsing code |
+| Cross-reference edges | Calls / Called By / Used By in each concept | Enables multi-hop reasoning without grep |
+
 ### Any agent with RUN capability
 
 [#any-agent-with-run-capability](#any-agent-with-run-capability)
