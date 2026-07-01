@@ -259,6 +259,33 @@ Options:
   --no-cache        Bypass and skip writing the lookup cache
 ```
 
+### `okf diff`
+
+[#okf-diff](#okf-diff)
+
+```
+okf diff <old_bundle> <new_bundle>
+
+Options:
+  --compact     Compact one-line output per concept
+  --json        JSON output for programmatic use
+```
+
+Compares two OKF bundles and shows added, removed, and changed concepts.
+Changes are detected via content hash (description, signature, tags).
+Useful for PR summaries: "this PR touched 3 classes and added 1 function."
+
+```bash
+# Compare current bundle against a checkpoint
+okf diff ./okf_bundle.bak ./okf_bundle
+
+# Compact view for CI summaries
+okf diff ./old_bundle ./new_bundle --compact
+
+# JSON for automated changelog generation
+okf diff ./v1_bundle ./v2_bundle --json
+```
+
 ### `okf pairs`
 
 [#okf-pairs](#okf-pairs)

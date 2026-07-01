@@ -3,6 +3,7 @@
 Commands:
   okf generate   <source_dir> [output_dir]   Generate OKF bundle from codebase
   okf lookup     <query> [options]            Look up a concept in a bundle
+  okf diff       <old> <new>                  Diff two bundles (added/removed/changed)
   okf pairs      <bundle_dir> [output_file]  Convert bundle to training pairs
   okf summarize  <bundle_dir>                Regenerate SUMMARY.md only
   okf install-skill                         Install Claude Code skill
@@ -53,6 +54,7 @@ def main():
         print("Commands:")
         print("  generate        Generate OKF bundle from a codebase")
         print("  lookup          Look up concepts in a bundle")
+        print("  diff            Compare two bundles (added/removed/changed)")
         print("  pairs           Convert bundle to JSONL training pairs")
         print("  summarize       Regenerate SUMMARY.md from existing bundle")
         print("  install-skill   Install Claude Code skill")
@@ -83,6 +85,10 @@ def main():
 
     elif cmd == "pairs":
         from okf.pairs import main as _main
+        _main()
+
+    elif cmd == "diff":
+        from okf.diff import main as _main
         _main()
 
     else:
