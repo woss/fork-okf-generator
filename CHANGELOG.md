@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.15] — 2026-07-01
+
+### Added
+- Cross-reference linker (`okf/linker.py`) — resolves imports → dependency edges and function calls → caller/callee edges across all 7 code languages. Each concept now shows **Calls**, **Called By**, and **Used By** in its markdown body.
+- `Concept` dataclass: `imports`, `calls_raw`, `calls`, `called_by` fields.
+- Per-language import/call collectors for Python (AST), JavaScript, TypeScript, Go, Java, Rust, Ruby.
+
+---
+
 ## [0.1.14] — 2026-07-01
 
 ### Fixed
@@ -198,7 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.14...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.15...HEAD
+[0.1.15]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.15
 [0.1.14]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.14
 [0.1.13]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.13
 [0.1.12]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.12

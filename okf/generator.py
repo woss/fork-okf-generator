@@ -95,6 +95,12 @@ class Concept:
     source_lines: tuple = ()         # (start, end)
     related: list[str] = field(default_factory=list)   # concept IDs to cross-link
     body_extra: dict = field(default_factory=dict)     # type-specific fields (e.g. Dependency)
+
+    # cross-reference edges (populated by parsers + okf.linker)
+    imports: list[str] = field(default_factory=list)    # Module only — raw import names
+    calls_raw: list[str] = field(default_factory=list)  # Function/Class/Method — raw callee names
+    calls: list[str] = field(default_factory=list)       # resolved concept_ids (linker output)
+    called_by: list[str] = field(default_factory=list)   # resolved concept_ids (linker output)
     # internal
     concept_id: str = ""             # e.g. "functions/my_func"
 
@@ -216,6 +222,7 @@ class TreeSitterParser:
             tags=[self.LANGUAGE, module_title],
             timestamp=ts,
             concept_id=res_id,
+            imports=self._collect_imports(root, src_bytes),
         )
 
         symbols = self._parse_symbols(root, src_bytes, rel, ts, res_id)
@@ -228,15 +235,28 @@ class TreeSitterParser:
         """Override per language to extract file-level doc comment."""
         return ""
 
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        """Override per language to collect raw import/require names.
+        Default returns empty — languages without an override produce no
+        import edges (silently correct, not an error)."""
+        return []
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        """Override per language to collect raw callee names inside a
+        function/method/class body.  Default returns empty."""
+        return []
+
     def _parse_symbols(self, root, src_bytes: bytes, resource: str, ts: str, parent_id: str) -> list[Concept]:
         """Override per language to extract functions, classes, etc."""
         return []
 
     def _make_concept(self, ctype: str, name: str, doc: str, sig: str,
                       resource: str, ts: str, parent_id: str,
-                      lineno: int = 0, methods: list[str] | None = None) -> Concept:
+                      lineno: int = 0, methods: list[str] | None = None,
+                      node=None, src_bytes: bytes = b"") -> Concept:
         res_id = re.sub(r"\.[^/]+$", "", resource).replace(os.sep, "/")
         cid    = f"{res_id}/{_safe_id(name)}"
+        calls_raw = self._collect_calls(node, src_bytes) if node is not None else []
         return Concept(
             type=ctype,
             title=name,
@@ -250,6 +270,7 @@ class TreeSitterParser:
             concept_id=cid,
             related=[parent_id],
             methods=methods or [],
+            calls_raw=calls_raw,
         )
 
 
@@ -300,6 +321,7 @@ class PythonParser:
             tags=[self.LANGUAGE, module_tag],
             timestamp=ts,
             concept_id=resource_id,
+            imports=self._collect_imports(tree),
         )
 
         funcs   = []
@@ -316,6 +338,29 @@ class PythonParser:
 
         return [module_concept] + funcs + classes
 
+    def _collect_imports(self, tree) -> list[str]:
+        """Top-level import names for a module, used by okf.linker to
+        cross-reference against manifest-derived Dependency concepts."""
+        names = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names.append(node.module)
+        return names
+
+    def _collect_calls(self, node) -> list[str]:
+        """Raw callee names referenced inside a function/method body, used
+        by okf.linker to resolve call-graph edges between concepts."""
+        names = []
+        for n in ast.walk(node):
+            if isinstance(n, ast.Call):
+                if isinstance(n.func, ast.Name):
+                    names.append(n.func.id)
+                elif isinstance(n.func, ast.Attribute):
+                    names.append(n.func.attr)
+        return names
+
     def _parse_function(self, node, resource, ts, parent_id) -> Concept:
         doc     = ast.get_docstring(node) or ""
         params  = self._params(node)
@@ -331,6 +376,7 @@ class PythonParser:
             timestamp=ts, signature=sig, params=params, returns=ret,
             source_lines=(node.lineno, node.end_lineno),
             concept_id=cid, related=[parent_id],
+            calls_raw=self._collect_calls(node),
         )
 
     def _parse_class(self, node, resource, ts, parent_id) -> Concept:
@@ -462,7 +508,8 @@ class JSTSParser(TreeSitterParser):
                 ret    = self._js_return_type(node)
                 sig    = f"function {name}({params})" + (f": {ret}" if ret else "")
                 concepts.append(self._make_concept(
-                    "Function", name, doc, sig, resource, ts, parent_id, node.start_point[0]+1))
+                    "Function", name, doc, sig, resource, ts, parent_id,
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
 
             elif node.type == "class_declaration":
                 name_node = node.child_by_field_name("name")
@@ -478,7 +525,7 @@ class JSTSParser(TreeSitterParser):
                 sig = f"class {name}"
                 concepts.append(self._make_concept(
                     "Class", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1, methods=methods))
+                    node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes))
 
             elif node.type == "lexical_declaration":
                 # const/let foo = (...) => ...  or  const foo = function(...) {}
@@ -496,9 +543,17 @@ class JSTSParser(TreeSitterParser):
                     sig    = f"const {name} = ({params}) =>" + (f": {ret}" if ret else "")
                     concepts.append(self._make_concept(
                         "Function", name, doc, sig, resource, ts, parent_id,
-                        node.start_point[0]+1))
+                        node.start_point[0]+1, node=value_node, src_bytes=src_bytes))
 
         return concepts
+
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        from okf.linker import js_collect_imports
+        return js_collect_imports(root, src_bytes)
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        from okf.linker import js_collect_calls
+        return js_collect_calls(node, src_bytes)
 
     def _js_params(self, node) -> str:
         params_node = node.child_by_field_name("parameters") or \
@@ -544,7 +599,7 @@ class GoParser(TreeSitterParser):
                 sig    = f"func {name}({params})" + (f" {ret}" if ret else "")
                 concepts.append(self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1))
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
 
             elif node.type == "method_declaration":
                 name = _node_text(node.child_by_field_name("name"))
@@ -558,7 +613,7 @@ class GoParser(TreeSitterParser):
                 sig    = f"func {recv_text} {name}({params})" + (f" {ret}" if ret else "")
                 concepts.append(self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1))
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
 
             elif node.type == "type_declaration":
                 # type Foo struct { ... } or type Foo interface { ... }
@@ -572,7 +627,6 @@ class GoParser(TreeSitterParser):
                     is_iface = type_node and type_node.type == "interface_type"
                     ctype   = "Interface" if is_iface else "Class"
                     sig     = f"type {name} struct" if not is_iface else f"type {name} interface"
-                    # collect field/method names
                     methods = [
                         _node_text(f.child_by_field_name("name") or f)
                         for f in _find_all(type_node or spec, "field_declaration", "method_spec")
@@ -580,9 +634,17 @@ class GoParser(TreeSitterParser):
                     ] if type_node else []
                     concepts.append(self._make_concept(
                         ctype, name, doc, sig, resource, ts, parent_id,
-                        node.start_point[0]+1, methods=methods))
+                        node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes))
 
         return concepts
+
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        from okf.linker import go_collect_imports
+        return go_collect_imports(root, src_bytes)
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        from okf.linker import go_collect_calls
+        return go_collect_calls(node, src_bytes)
 
     def _go_params(self, node) -> str:
         p = node.child_by_field_name("parameters")
@@ -635,7 +697,8 @@ class JavaParser(TreeSitterParser):
                     msig    = f"{mret} {_node_text(mname)}({mparams})"
                     concepts.append(self._make_concept(
                         "Function", _node_text(mname), mdoc, msig,
-                        resource, ts, parent_id, method.start_point[0]+1))
+                        resource, ts, parent_id, method.start_point[0]+1,
+                        node=method, src_bytes=src_bytes))
 
             mods = node.child_by_field_name("modifiers")
             mod_text = _node_text(mods) + " " if mods else ""
@@ -644,9 +707,17 @@ class JavaParser(TreeSitterParser):
                    f"enum {name}"
             concepts.insert(0, self._make_concept(
                 "Class", name, doc, sig, resource, ts, parent_id,
-                node.start_point[0]+1, methods=methods))
+                node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes))
 
         return concepts
+
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        from okf.linker import java_collect_imports
+        return java_collect_imports(root, src_bytes)
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        from okf.linker import java_collect_calls
+        return java_collect_calls(node, src_bytes)
 
     def _java_params(self, node) -> str:
         p = node.child_by_field_name("parameters")
@@ -693,7 +764,7 @@ class RustParser(TreeSitterParser):
                 sig    = f"{vis+' ' if vis else ''}fn {name}({params})" + (f" -> {ret}" if ret else "")
                 concepts.append(self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1))
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
 
             elif node.type in {"struct_item", "enum_item", "trait_item"}:
                 name_node = node.child_by_field_name("name")
@@ -704,7 +775,6 @@ class RustParser(TreeSitterParser):
                 kind  = {"struct_item": "struct", "enum_item": "enum", "trait_item": "trait"}[node.type]
                 vis   = _node_text(node.child_by_field_name("visibility_modifier"))
                 sig   = f"{vis+' ' if vis else ''}{kind} {name}"
-                # collect field names
                 fields = [
                     _node_text(f.child_by_field_name("name"))
                     for f in _find_all(node, "field_declaration")
@@ -712,10 +782,9 @@ class RustParser(TreeSitterParser):
                 ]
                 concepts.append(self._make_concept(
                     "Class", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1, methods=fields))
+                    node.start_point[0]+1, methods=fields, node=node, src_bytes=src_bytes))
 
             elif node.type == "impl_item":
-                # impl Foo { fn bar(...) } — attach methods to parent concept
                 type_node = node.child_by_field_name("type")
                 type_name = _node_text(type_node) if type_node else ""
                 for fn in _find_all(node, "function_item"):
@@ -730,9 +799,17 @@ class RustParser(TreeSitterParser):
                              (f" -> {ret}" if ret else "") + " }"
                     concepts.append(self._make_concept(
                         "Function", fn_name, doc, sig, resource, ts, parent_id,
-                        fn.start_point[0]+1))
+                        fn.start_point[0]+1, node=fn, src_bytes=src_bytes))
 
         return concepts
+
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        from okf.linker import rust_collect_imports
+        return rust_collect_imports(root, src_bytes)
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        from okf.linker import rust_collect_calls
+        return rust_collect_calls(node, src_bytes)
 
     def _rust_params(self, node) -> str:
         p = node.child_by_field_name("parameters")
@@ -774,7 +851,7 @@ class RubyParser(TreeSitterParser):
                 sig    = f"def {name}({params})"
                 concepts.append(self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1))
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
 
             elif node.type in {"class", "module"}:
                 methods = [
@@ -785,9 +862,17 @@ class RubyParser(TreeSitterParser):
                 sig = f"class {name}" if node.type == "class" else f"module {name}"
                 concepts.append(self._make_concept(
                     "Class", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1, methods=methods))
+                    node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes))
 
         return concepts
+
+    def _collect_imports(self, root, src_bytes: bytes) -> list[str]:
+        from okf.linker import ruby_collect_imports
+        return ruby_collect_imports(root, src_bytes)
+
+    def _collect_calls(self, node, src_bytes: bytes) -> list[str]:
+        from okf.linker import ruby_collect_calls
+        return ruby_collect_calls(node, src_bytes)
 
     def _ruby_params(self, node) -> str:
         p = node.child_by_field_name("parameters") or node.child_by_field_name("method_parameters")
@@ -1097,7 +1182,16 @@ def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
         lines.append(f"| Version constraint | `{be.get('version_constraint', '')}` |")
         lines.append(f"| Source manifest | `{be.get('source_manifest', '')}` |")
         lines.append(f"| Dev dependency | `{'yes' if be.get('dev_dependency') else 'no'}` |")
+        used_by = be.get("used_by") or []
+        lines.append(f"| Used by | {len(used_by)} module(s) |")
         lines.append("")
+        if used_by:
+            lines.append("## Used By\n")
+            for cid in used_by:
+                rel_concept = all_concepts.get(cid)
+                label = rel_concept.title if rel_concept else cid.split("/")[-1]
+                lines.append(f"- [{label}](/{cid}.md)")
+            lines.append("")
         return "\n".join(lines)
 
     if concept.signature:
@@ -1146,6 +1240,22 @@ def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
                 # cid not found — may be stale; show as plain text
                 label = cid.split("/")[-1]
                 lines.append(f"- {label} *(unresolved)*")
+        lines.append("")
+
+    if concept.calls:
+        lines.append("## Calls\n")
+        for cid in concept.calls:
+            rel_concept = all_concepts.get(cid)
+            label = rel_concept.title if rel_concept else cid.split("/")[-1]
+            lines.append(f"- [{label}](/{cid}.md)")
+        lines.append("")
+
+    if concept.called_by:
+        lines.append("## Called By\n")
+        for cid in concept.called_by:
+            rel_concept = all_concepts.get(cid)
+            label = rel_concept.title if rel_concept else cid.split("/")[-1]
+            lines.append(f"- [{label}](/{cid}.md)")
         lines.append("")
 
     return "\n".join(lines)
@@ -1608,6 +1718,12 @@ def scan_codebase(root: Path) -> list[Concept]:
 
     if not concepts:
         log.warning(f"No recognized source files found under {root} — bundle will be empty.")
+        return concepts
+
+    from okf.linker import link_all
+    stats = link_all(concepts)
+    log.info(stats.summary_line())
+
     return concepts
 
 

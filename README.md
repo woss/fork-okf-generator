@@ -72,6 +72,7 @@ The OKF ecosystem is moving fast — here's where `okf-generator` sits relative 
 | | **okf-generator** | Other OKF producers |
 | --- | --- | --- |
 | Language coverage | 7 languages (Python, JS/TS, Go, Java, Rust, Ruby, SQL) | Usually 1 language or doc-only |
+| Cross-reference linking | Imports → dependencies, function calls → caller/callee across all languages | Not typically supported |
 | Dependency/manifest parsing | 12 formats (pip, npm, cargo, go, maven, gradle, composer, rubygems, swiftpm, clojars, hex, +1) | Not typically supported |
 | Extraction | Zero-LLM, deterministic, offline | Often LLM-required for every concept |
 | Optional enrichment | Any OpenAI-compatible endpoint (Claude, local llama.cpp, Ollama) | Often locked to one vendor |
