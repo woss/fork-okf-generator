@@ -1,5 +1,14 @@
 # OKF Generator — Agent Instructions
 
+## CRITICAL RULE: Never grep source files first
+
+**BEFORE reading any source file, ALWAYS run:**
+```
+okf lookup --bundle ./okf_bundle <ConceptName>
+```
+
+`okf lookup` returns the exact signature, parameters, docstring, dependencies, and callers in milliseconds. Grepping or reading source files directly is slower and gives you less information.
+
 ## Quick Start
 
 ```bash
@@ -14,16 +23,36 @@ pytest tests/ -q           # 70+ tests
 | `okf/generator.py` | Core scanner & bundle writer |
 | `okf/manifest_scanner.py` | Dependency/manifest parsers (12 formats) |
 | `okf/lookup.py` | Concept search |
+| `okf/diff.py` | Bundle comparison |
 | `okf/pairs.py` | Training data generation |
 | `okf/cli.py` | CLI entry point |
 | `tests/` | 70+ unit tests |
 | `tests/fixtures/complex/` | Multi-language test data (7 langs, 12 manifests) |
 
-## Before Editing a Class or Function
+## Lookup patterns
 
-Look it up in the OKF bundle:
-```
-okf lookup --bundle ./okf_bundle <ConceptName>
+```bash
+# Single concept (full detail: signature, params, docstring, calls, called-by)
+okf lookup --bundle ./okf_bundle ClassName
+
+# Filter by type
+okf lookup --bundle ./okf_bundle --type Class
+okf lookup --bundle ./okf_bundle --type Function
+okf lookup --bundle ./okf_bundle --type Dependency
+
+# Filter by language / ecosystem
+okf lookup --bundle ./okf_bundle --tag lang:python
+okf lookup --bundle ./okf_bundle --tag ecosystem:npm
+
+# All concepts from one source file
+okf lookup --bundle ./okf_bundle --file path/to/file.py
+
+# Dependencies
+okf lookup --bundle ./okf_bundle --type Dependency
+okf lookup --bundle ./okf_bundle --type Dependency --tag ecosystem:pip
+
+# JSON for programmatic use
+okf lookup --bundle ./okf_bundle --json <Name>
 ```
 
 ## Custom Commands
@@ -37,6 +66,11 @@ okf lookup --bundle ./okf_bundle <ConceptName>
 **Generate a bundle:**
 ```
 okf generate ./src ./okf_bundle
+```
+
+**Diff two bundles:**
+```
+okf diff ./old_bundle ./new_bundle --compact
 ```
 
 **Full integration test:**
