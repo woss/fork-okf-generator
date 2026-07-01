@@ -50,6 +50,8 @@ dev = [
     "hatch",
     "build",
     "twine",
+    "ruff>=0.1",
+    "pre-commit>=3.0",
 ]
 all = [
     "okf-generator[llm,dev]",

@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.0
+    hooks:
+      - id: ruff
+        args: [--select, E,F,W, --ignore, E501]
+
+  - repo: local
+    hooks:
+      - id: bumblebee-scan
+        name: Bumblebee supply-chain scan
+        description: Scans dependencies for known supply-chain compromises
+        entry: bumblebee scan --profile baseline --findings-only --max-duration 1m
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

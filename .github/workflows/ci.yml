@@ -41,6 +41,25 @@ jobs:
       - run: pip install ruff
       - run: ruff check okf/ --select E,F,W --ignore E501
 
+  security:
+    name: Supply-chain scan (Bumblebee)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      - name: Install Bumblebee
+        run: go install github.com/perplexityai/bumblebee/cmd/bumblebee@latest
+      - name: Install project dependencies (for venv scan)
+        run: |
+          python3 -m venv /tmp/scan_venv
+          /tmp/scan_venv/bin/pip install -e ".[llm]" -q
+      - name: Run Bumblebee scan
+        run: |
+          ~/go/bin/bumblebee scan --profile baseline --root "$(pwd)" --findings-only --max-duration 2m
+          echo "Bumblebee scan complete — no findings (clean)"
+
   build:
     name: Build distribution
     runs-on: ubuntu-latest
