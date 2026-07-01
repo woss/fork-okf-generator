@@ -9,6 +9,7 @@
 [![OKF v0.1](https://img.shields.io/badge/OKF-v0.1-7c3aed?style=flat-square)](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing)
 [![Claude Skill](https://img.shields.io/badge/Claude-Skill-orange?style=flat-square&logo=anthropic)](https://github.com/UmairBaig8/okf-generator/blob/main/SKILL.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/UmairBaig8/okf-generator/blob/main/CONTRIBUTING.md)
+[![Agents](https://img.shields.io/badge/okf_install-6_agents-4ade80?style=flat-square)](README.md#agent-installation)
 
 **Index any codebase into a structured OKF v0.1 knowledge bundle — then look up exact concepts for any AI coding agent.**
 

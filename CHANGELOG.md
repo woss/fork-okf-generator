@@ -13,6 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.19] — 2026-07-01
+
+### Added
+- `okf install [agent]` — unified agent setup. Install integration for Claude Code, OpenCode, Copilot, Cursor, Windsurf, or Cline with a single command. Replaces `okf install-skill`.
+- **Bumblebee supply-chain scan** — pre-commit hook (`.pre-commit-config.yaml`) and CI job scans dependencies for known compromises via `bumblebee scan --findings-only`.
+- AI agent instructions made forceful: AGENTS.md and `.github/copilot-instructions.md` now lead with "CRITICAL RULE: Never grep source files first, always run `okf lookup`".
+- AI-assisted pre-release audit section in RELEASE.md.
+
+### Changed
+- `.github/copilot-instructions.md` — detailed lookup patterns for Copilot users.
+- README: unified "Agent Installation" section replacing "Claude Skill" section.
+
+---
+
 ## [0.1.18] — 2026-07-01
 
 ### Added
@@ -240,7 +254,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.18...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.19...HEAD
+[0.1.19]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.19
 [0.1.18]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.18
 [0.1.17]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.17
 [0.1.16]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.16
