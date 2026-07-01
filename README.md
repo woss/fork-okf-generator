@@ -487,6 +487,15 @@ Once installed, Claude Code automatically triggers the skill on phrases like:
 
 The same `.md` output works with **any** agent — no vendor lock-in. Point Cursor, Windsurf, Cline, or Copilot at your bundle and they get the same structured knowledge.
 
+## See Also
+
+[#see-also](#see-also)
+
+Projects in the same ecosystem:
+
+- **[Bumblebee](https://github.com/perplexityai/bumblebee)** — Perplexity AI's supply-chain inventory scanner. Scans on-disk lockfiles and package metadata for exposure to known compromises. Complements okf-generator's dependency extraction with a security-focused lens.
+- **[tree-sitter](https://tree-sitter.github.io/tree-sitter/)** — Incremental parsing library. Powers 6 of 7 code language parsers in okf-generator.
+
 ## FAQ
 
 [#faq](#faq)
