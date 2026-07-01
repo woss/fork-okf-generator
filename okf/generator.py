@@ -880,155 +880,84 @@ class RubyParser(TreeSitterParser):
 
 
 # ---------------------------------------------------------------------------
-# SQL parser (regex-based — no SQL dialect has a single stable tree-sitter
-# grammar across Postgres/MySQL/SQLite/T-SQL, so we use a deterministic,
-# dialect-tolerant statement scanner instead, in keeping with the
-# zero-LLM / offline-capable extraction philosophy used elsewhere).
+# SQL parser (tree-sitter)
 # ---------------------------------------------------------------------------
 
-class SQLParser:
+class SQLParser(TreeSitterParser):
     LANGUAGE   = "sql"
     EXTENSIONS = {".sql"}
+    _TS_MODULE = "tree_sitter_sql"
+    _lang_obj  = None
 
-    # CREATE [OR REPLACE] [TEMP|TEMPORARY] <KIND> [IF NOT EXISTS] <name> ...
-    _STMT_RE = re.compile(
-        r"""CREATE
-            (?:\s+OR\s+REPLACE)?
-            (?:\s+(?:TEMP|TEMPORARY))?
-            \s+(?P<kind>TABLE|VIEW|MATERIALIZED\s+VIEW|FUNCTION|PROCEDURE|INDEX|UNIQUE\s+INDEX|TYPE|TRIGGER)
-            (?:\s+IF\s+NOT\s+EXISTS)?
-            \s+(?P<name>[`"\[]?[\w$.]+[`"\]]?)
-        """,
-        re.IGNORECASE | re.VERBOSE,
-    )
-
-    _KIND_TO_TYPE = {
-        "TABLE": "Table", "VIEW": "View", "MATERIALIZED VIEW": "View",
-        "FUNCTION": "Function", "PROCEDURE": "Function",
-        "INDEX": "Index", "UNIQUE INDEX": "Index",
-        "TYPE": "Type", "TRIGGER": "Trigger",
+    _KIND_MAP = {
+        "create_table": "Table",
+        "create_view": "View",
+        "create_function": "Function",
+        "create_procedure": "Function",
+        "create_index": "Index",
+        "create_trigger": "Trigger",
+        "create_type": "Type",
     }
 
-    def parse_file(self, path: Path, repo_root: Path) -> list[Concept]:
-        rel    = str(path.relative_to(repo_root))
-        ts     = _ts(path)
-        res_id = str(path.relative_to(repo_root).with_suffix("")).replace(os.sep, "/")
+    def _module_doc(self, root, src_bytes: bytes) -> str:
+        for child in root.children:
+            if child.type not in {"comment", "marginalia", ""}:
+                return _prev_comment(child, src_bytes)
+        return ""
 
-        try:
-            src = path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            return []
+    def _parse_symbols(self, root, src_bytes, resource, ts, parent_id):
+        concepts = []
+        for stmt in root.children:
+            if stmt.type != "statement" or not stmt.children:
+                continue
+            inner = stmt.children[0]
+            ctype = self._KIND_MAP.get(inner.type)
+            if ctype is None:
+                continue
 
-        stripped = self._strip_comments(src)
-        module_title = path.stem
-        module = Concept(
-            type="Module", title=module_title,
-            description=f"sql file: {path.name}",
-            resource=rel, tags=[self.LANGUAGE, module_title],
-            timestamp=ts, concept_id=res_id,
-        )
-
-        symbols = []
-        for m in self._STMT_RE.finditer(stripped):
-            kind = re.sub(r"\s+", " ", m.group("kind").upper())
-            ctype = self._KIND_TO_TYPE.get(kind, "Table")
-            name  = m.group("name").strip("`\"[]")
-            lineno = stripped.count("\n", 0, m.start()) + 1
-            doc    = self._preceding_comment(src, m.start())
-            statement_end = self._statement_end(stripped, m.start())
-            sig = re.sub(r"\s+", " ", stripped[m.start():statement_end]).strip()
+            name = self._sql_name(inner, ctype)
+            if not name:
+                continue
+            doc = _prev_comment(inner, src_bytes)
+            sig = _node_text(inner)
             if len(sig) > 200:
                 sig = sig[:200] + " ..."
 
-            res_path = re.sub(r"\.[^/]+$", "", rel).replace(os.sep, "/")
-            cid = f"{res_path}/{_safe_id(name)}"
-            symbols.append(Concept(
-                type=ctype, title=name,
-                description=_first_line(doc) or f"{ctype} defined in {path.name}",
-                docstring=doc, signature=sig,
-                resource=rel, tags=[self.LANGUAGE, ctype.lower()],
-                timestamp=ts, source_lines=(lineno, 0),
-                concept_id=cid, related=[res_id],
-            ))
-            module.related.append(cid)
-
-        return [module] + symbols
-
-    @staticmethod
-    def _strip_comments(src: str) -> str:
-        """Blank out comments while preserving line numbers/offsets."""
-        out = []
-        i, n = 0, len(src)
-        in_block = in_line = in_str = False
-        str_ch = ""
-        while i < n:
-            c = src[i]
-            nxt = src[i+1] if i + 1 < n else ""
-            if in_block:
-                out.append(" " if c != "\n" else "\n")
-                if c == "*" and nxt == "/":
-                    out.append(" ")
-                    i += 2
-                    in_block = False
-                    continue
-                i += 1
-                continue
-            if in_line:
-                out.append(c if c == "\n" else " ")
-                if c == "\n":
-                    in_line = False
-                i += 1
-                continue
-            if in_str:
-                out.append(c)
-                if c == str_ch and src[i-1:i] != "\\":
-                    in_str = False
-                i += 1
-                continue
-            if c == "-" and nxt == "-":
-                in_line = True
-                out.append("  ")
-                i += 2
-                continue
-            if c == "/" and nxt == "*":
-                in_block = True
-                out.append("  ")
-                i += 2
-                continue
-            if c in ("'", '"'):
-                in_str = True
-                str_ch = c
-                out.append(c)
-                i += 1
-                continue
-            out.append(c)
-            i += 1
-        return "".join(out)
-
-    @staticmethod
-    def _preceding_comment(src: str, pos: int) -> str:
-        """Grab the `-- ...` or `/* ... */` block immediately above a statement."""
-        before = src[:pos].rstrip()
-        lines, doc = before.splitlines(), []
-        for line in reversed(lines):
-            s = line.strip()
-            if s.startswith("--"):
-                doc.insert(0, s.lstrip("- ").strip())
-            elif s == "" and doc:
-                break
-            elif s.endswith("*/") or s.startswith("/*") or s.startswith("*"):
-                doc.insert(0, s.strip("/* ").rstrip("*/ ").strip())
+            if ctype == "Function":
+                params = self._sql_params(inner)
+                sig = f"{'CREATE OR REPLACE ' if any(c.type == 'keyword_replace' for c in inner.children) else 'CREATE '}{inner.type.upper().split('_')[1]} {name}({params})"
+                concepts.append(self._make_concept(
+                    "Function", name, doc, sig, resource, ts, parent_id,
+                    inner.start_point[0]+1))
             else:
-                break
-        return "\n".join(doc)
+                concepts.append(Concept(
+                    type=ctype, title=name,
+                    description=_first_line(doc) or f"{ctype} defined in {Path(resource).name}",
+                    docstring=doc, signature=sig,
+                    resource=resource, tags=[self.LANGUAGE, ctype.lower()],
+                    timestamp=ts, source_lines=(inner.start_point[0]+1, inner.end_point[0]+1),
+                    concept_id=f"{re.sub(r'\.[^/]+$', '', resource).replace(os.sep, '/')}/{_safe_id(name)}",
+                    related=[parent_id],
+                ))
+        return concepts
 
     @staticmethod
-    def _statement_end(stripped: str, start: int) -> int:
-        semi = stripped.find(";", start)
-        nl   = stripped.find("\n", start)
-        candidates = [x for x in (semi, ) if x != -1]
-        end = min(candidates) if candidates else (nl if nl != -1 else len(stripped))
-        return min(end, len(stripped))
+    def _sql_name(node, ctype: str) -> str:
+        for c in node.children:
+            if c.type == "object_reference":
+                for cc in c.children:
+                    if cc.type == "identifier":
+                        return _node_text(cc)
+            if c.type == "identifier" and ctype == "Index":
+                return _node_text(c)
+        return ""
+
+    @staticmethod
+    def _sql_params(node) -> str:
+        for c in node.children:
+            if c.type == "function_arguments":
+                return _node_text(c).strip("()")
+        return ""
 
 
 # ---------------------------------------------------------------------------

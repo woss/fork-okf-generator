@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.16] — 2026-07-01
+
+### Changed
+- SQL parser: replaced regex-based scanner with `tree-sitter-sql` grammar, following the same `TreeSitterParser` base class as the other 6 code languages. Reduces false positives on multi-statement or dialect-specific SQL, and adds source line numbers, proper SQL signatures, and preceding-comment extraction.
+
+---
+
 ## [0.1.15] — 2026-07-01
 
 ### Added
@@ -207,7 +214,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.15...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.16...HEAD
+[0.1.16]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.16
 [0.1.15]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.15
 [0.1.14]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.14
 [0.1.13]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.13
