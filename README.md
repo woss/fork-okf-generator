@@ -149,6 +149,12 @@ flowchart LR
 
 Extraction is fully deterministic and offline-capable — no LLM call is required to produce a usable bundle. LLM enrichment is an optional second pass that improves descriptions, and it's resumable: interrupt it anytime and rerun without redoing work already done.
 
+After scanning, a **cross-reference linker** runs across all concepts, building two edge types:
+- **Imports → Dependencies** — module-level `import`/`require` statements are matched against the dependency index, showing which dependencies each module uses (and which modules use each dependency).
+- **Calls → Callees** — function/method call sites are resolved to concept IDs, rendering **Calls** and **Called By** sections in each concept file.
+
+All 7 code languages participate (Python AST + JS/TS/Go/Java/Rust/Ruby tree-sitter). The linker is a single fast pass — no LLM, no external service.
+
 ## Bundle Layout
 
 [#bundle-layout](#bundle-layout)
@@ -208,6 +214,12 @@ timestamp: '2026-05-23T09:01:21Z'
 ## CLI Reference
 
 [#cli-reference](#cli-reference)
+
+```
+okf [command] --help    Show help for a specific command
+okf --version           Show version and exit
+
+```
 
 ### `okf generate`
 

@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - C# / Swift / Kotlin parsers
-- `okf --version` flag
 - mkdocs documentation site
 
 ---

@@ -41,6 +41,11 @@ def _install_skill():
 
 
 def main():
+    if len(sys.argv) >= 2 and sys.argv[1] in {"-v", "--version"}:
+        from okf import __version__
+        print(f"okf-generator v{__version__}")
+        sys.exit(0)
+
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
         print(__doc__)
         print("Usage: okf <command> [args]")
