@@ -37,9 +37,11 @@
 🔗 **Cross-reference linker** — imports → dependencies, function calls → caller/callee across all languages.  
 🔍 **Instant lookup** — `okf lookup` finds any class, function, or dependency in milliseconds.  
 📊 **Interactive viz** — `okf visualize` generates an HTML explorer with tree nav, ego graphs, and dark/light theme.  
+🤖 **MCP server** — `okf mcp` exposes bundles via Model Context Protocol for Claude Desktop, Cursor, and any MCP client.  
 📦 **Training data** — `okf pairs` converts bundles to JSONL for fine-tuning.  
 🔄 **Bundle diff** — `okf diff` compares two bundles (added/removed/changed).  
 🌐 **Local server** — `okf serve` launches a local HTTP server for any bundle.  
+🎮 **Interactive REPL** — `okf init` runs an interactive wizard with commands like `/lookup`, `/viz`, `/serve`, `/deps`.  
 
 ## Quick Start
 
@@ -55,8 +57,15 @@ okf generate ./my_project ./okf_bundle
 # Look up a concept (zero LLM, instant)
 okf lookup WorldBankConnector
 
-# List all pip dependencies
-okf lookup --type Dependency --tag ecosystem:pip
+# List all dependencies
+okf lookup --deps
+
+# Interactive bundle setup wizard
+okf init
+
+# Visualize as interactive HTML
+okf visualize ./okf_bundle
+okf serve ./okf_bundle --open
 ```
 
 ## Installation
@@ -121,7 +130,7 @@ If you're choosing between OKF producers: pick `okf-generator` when you want bro
 
 ![okf-generator pipeline](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/workflow.png)
 
-> **Pipeline:** `okf generate` scans your codebase → linker resolves cross-references → writes an OKF bundle → consumed via 6 commands (lookup, pairs, visualize, diff, serve, install).
+> **Pipeline:** `okf generate` scans your codebase → linker resolves cross-references → writes an OKF bundle → consumed via 7 commands (lookup, pairs, diff, visualize, mcp, serve, init).
 
 Extraction is fully deterministic and offline-capable. LLM enrichment is an optional second pass, resumable on interrupt.
 
@@ -211,7 +220,9 @@ okf --version           Show version
 | `pairs` | `okf pairs <bundle_dir> [output_file]` |
 | `summarize` | `okf summarize <bundle_dir>` |
 | `install` | `okf install [claude \| opencode \| copilot \| cursor \| windsurf \| cline]` |
+| `init` | `okf init [dir]` |
 | `visualize` | `okf visualize <bundle_dir> [output.html]` |
+| `mcp` | `okf mcp <bundle_dir>` |
 | `serve` | `okf serve [dir] [--port] [--open]` |
 
 See [docs/cli-reference.md](https://github.com/UmairBaig8/okf-generator/blob/main/docs/cli-reference.md) for full options, environment variables, and examples.

@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.25] — 2026-07-02
+
+### Added
+- **10 languages** — C, C++, C# tree-sitter parsers (was 7).
+- **17 manifest formats** — `yarn.lock` and `pnpm-lock.yaml` parsers.
+- `okf mcp` — MCP server for Claude Desktop, Cursor, and any MCP client.
+- `okf init` — interactive wizard with REPL commands (`/lookup`, `/viz`, `/serve`, `/deps`, `/install`).
+- `okf serve` — local HTTP server with auto-redirect to viz.
+- `okf diff` — bundle comparison (added/removed/changed).
+- `okf lookup --deps` — shortcut for `--type Dependency`.
+- `okf generate` progress bar via `tqdm`.
+- CLI banner (compact dashboard style with version).
+- Lookup cache for instant repeat queries.
+
+### Changed
+- README updated: 10 languages, 17 manifests, 7 consume commands, new demo GIF.
+
+### Fixed
+- `okf visualize` — embedded template (no more `demo.html` not found on PyPI).
+- `source_lines` end was hardcoded to 0 — now uses `node.end_point`.
+
+---
+
 ## [0.1.24] — 2026-07-02
 
 ### Added
@@ -317,7 +340,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.24...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.25...HEAD
+[0.1.25]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.25
 [0.1.24]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.24
 [0.1.23]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.23
 [0.1.22]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.22
