@@ -126,6 +126,7 @@ def visualize(bundle_dir: Path) -> tuple[str, int, int]:
     html = base64.b64decode(DEMO_HTML_B64).decode("utf-8")
 
     html = html.replace("<title>OKF Bundle — demo</title>", f"<title>OKF Bundle — {bundle_name}</title>")
+    html = html.replace('<span class="name">fresh_agentbox</span>', f'<span class="name">{bundle_name}</span>')
 
     okf_link = '<a href="https://github.com/UmairBaig8/okf-generator" target="_blank" style="font-size:11px;color:var(--text-3);text-decoration:none;margin-right:8px;white-space:nowrap">okf</a>\n  '
     html = html.replace('<button class="icon-btn" id="theme-toggle"', okf_link + '<button class="icon-btn" id="theme-toggle"')
