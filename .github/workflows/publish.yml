@@ -68,13 +68,8 @@ jobs:
 
       - name: Generate full test report
         run: |
-          python3 -m venv /tmp/report_venv
-          /tmp/report_venv/bin/pip install --quiet "okf-generator==$VERSION"
-          cp -a tests/fixtures /tmp/report_venv/tests/
-          cd /tmp/report_venv
+          pip install -e ".[dev]" -q
           bash tests/test.sh 2>&1
-          cp TEST_REPORT.html "$GITHUB_WORKSPACE/TEST_REPORT.html"
-          cp TEST_REPORT.md "$GITHUB_WORKSPACE/TEST_REPORT.md"
 
       - name: Upload test report to release
         uses: softprops/action-gh-release@v2
