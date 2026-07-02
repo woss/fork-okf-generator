@@ -140,3 +140,20 @@ Generate an interactive HTML graph of an OKF bundle. Uses D3.js force-directed g
 - Pan/zoom
 
 Output is a self-contained HTML file (no server, no install).
+
+---
+
+## `okf serve`
+
+```bash
+okf serve [bundle_dir] [options]
+```
+
+Launch a local HTTP server for browsing an OKF bundle.
+
+| Option | Description |
+|--------|-------------|
+| `--port, -p PORT` | Port (default: 8000) |
+| `--open, -o` | Open browser automatically |
+| `--quiet, -q` | Suppress request logs |
+| `--host HOST` | Host (default: 127.0.0.1) |

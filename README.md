@@ -215,6 +215,7 @@ okf --version           Show version
 | `summarize` | `okf summarize <bundle_dir>` |
 | `install` | `okf install [claude \| opencode \| copilot \| cursor \| windsurf \| cline]` |
 | `visualize` | `okf visualize <bundle_dir> [output.html]` |
+| `serve` | `okf serve [dir] [--port] [--open]` |
 
 See [docs/cli-reference.md](https://github.com/UmairBaig8/okf-generator/blob/main/docs/cli-reference.md) for full options, environment variables, and examples.
 
