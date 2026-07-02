@@ -1092,6 +1092,69 @@ def test_csharp_class_fields():
     import shutil; shutil.rmtree(tmp)
 
 
+# ── TypeScript completeness: interfaces, type aliases, enums (Tier 2) ────
+
+def test_typescript_interface():
+    """TypeScript interface declarations are extracted."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "types.ts").write_text(
+        "interface User {\n"
+        "    name: string;\n"
+        "    age: number;\n"
+        "}\n"
+        "interface Admin extends User {\n"
+        "    role: string;\n"
+        "}\n"
+    )
+    concepts = scan_codebase(tmp)
+    user = next((c for c in concepts if c.type == "Interface" and c.title == "User"), None)
+    assert user is not None, f"Interface 'User' not found"
+    assert "name" in user.methods, f"Interface User should list 'name': {user.methods}"
+    admin = next((c for c in concepts if c.type == "Interface" and c.title == "Admin"), None)
+    assert admin is not None
+    assert "User" in admin.inheritance, f"Admin should extend User: {admin.inheritance}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_typescript_type_alias():
+    """TypeScript type alias declarations are extracted."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "types.ts").write_text(
+        "type UserID = string;\n"
+        "type Callback<T> = (data: T) => void;\n"
+    )
+    concepts = scan_codebase(tmp)
+    uid = next((c for c in concepts if c.type == "Type" and c.title == "UserID"), None)
+    assert uid is not None, f"Type alias 'UserID' not found"
+    cb = next((c for c in concepts if c.type == "Type" and c.title == "Callback"), None)
+    assert cb is not None, f"Type alias 'Callback' not found"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_typescript_enum():
+    """TypeScript enum declarations are extracted."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "types.ts").write_text(
+        "enum Color {\n"
+        "    Red,\n"
+        "    Green,\n"
+        "    Blue\n"
+        "}\n"
+    )
+    concepts = scan_codebase(tmp)
+    color = next((c for c in concepts if c.type == "Class" and c.title == "Color"), None)
+    assert color is not None, f"Enum 'Color' not found"
+    assert "Red" in color.methods, f"Enum Color should list Red: {color.methods}"
+    assert "Green" in color.methods, f"Enum Color should list Green: {color.methods}"
+    import shutil; shutil.rmtree(tmp)
+
+
 # ── Method emission as individual concepts (Tier 1) ──────────────────────
 
 def test_python_methods_emitted():

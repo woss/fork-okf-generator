@@ -541,6 +541,9 @@ class JSTSParser(TreeSitterParser):
                                "class_declaration",
                                "method_definition",
                                "lexical_declaration",    # const foo = () => {}
+                               "interface_declaration",
+                               "type_alias_declaration",
+                               "enum_declaration",
                                "export_statement"):
             if node.type in {"function_declaration"}:
                 name_node = node.child_by_field_name("name")
@@ -632,6 +635,65 @@ class JSTSParser(TreeSitterParser):
                     node.start_point[0]+1, node=node, src_bytes=src_bytes, type_params=mtp)
                 mc.visibility = mvis
                 concepts.append(mc)
+
+            elif node.type == "interface_declaration":
+                iname_node = node.child_by_field_name("name")
+                if not iname_node:
+                    continue
+                iname = _node_text(iname_node)
+                idoc  = _prev_comment(node, src_bytes)
+                # Extract heritage (extends)
+                ibases = []
+                for child in node.children:
+                    if child.type in ("class_heritage", "extends_type_clause"):
+                        if child.type == "extends_type_clause":
+                            for item in child.children:
+                                if item.type in ("identifier", "type_identifier", "nested_type_identifier"):
+                                    ibases.append(_node_text(item))
+                        else:
+                            for sub in child.children:
+                                if sub.type == "extends_clause":
+                                    for item in sub.children:
+                                        if item.type in ("identifier", "type_identifier", "nested_type_identifier"):
+                                            ibases.append(_node_text(item))
+                # Collect interface members
+                imethods = []
+                for body_child in node.children:
+                    if body_child.type == "interface_body":
+                        for member in body_child.children:
+                            if member.type in ("method_signature", "property_signature"):
+                                msig_name = member.child_by_field_name("name")
+                                if msig_name:
+                                    imethods.append(_node_text(msig_name))
+                ic = self._make_concept(
+                    "Interface", iname, idoc, f"interface {iname}", resource, ts, parent_id,
+                    node.start_point[0]+1, methods=imethods, node=node, src_bytes=src_bytes)
+                ic.inheritance = ibases
+                concepts.append(ic)
+
+            elif node.type == "type_alias_declaration":
+                taname_node = node.child_by_field_name("name")
+                taname = _node_text(taname_node) if taname_node else ""
+                if taname:
+                    tadoc = _prev_comment(node, src_bytes)
+                    concepts.append(self._make_concept(
+                        "Type", taname, tadoc, f"type {taname} = …", resource, ts, parent_id,
+                        node.start_point[0]+1, node=node, src_bytes=src_bytes))
+
+            elif node.type == "enum_declaration":
+                ename_node = node.child_by_field_name("name")
+                ename = _node_text(ename_node) if ename_node else ""
+                if ename:
+                    edoc = _prev_comment(node, src_bytes)
+                    emembers = []
+                    for child in node.children:
+                        if child.type == "enum_body":
+                            for member in child.children:
+                                if member.type == "property_identifier":
+                                    emembers.append(_node_text(member))
+                    concepts.append(self._make_concept(
+                        "Class", ename, edoc, f"enum {ename}", resource, ts, parent_id,
+                        node.start_point[0]+1, methods=emembers, node=node, src_bytes=src_bytes))
 
             elif node.type == "lexical_declaration":
                 # const/let foo = (...) => ...  or  const foo = function(...) {}
