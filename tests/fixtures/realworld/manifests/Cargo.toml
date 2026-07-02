@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "../rust/easy",
+    "../rust/complex",
+]
+resolver = "2"

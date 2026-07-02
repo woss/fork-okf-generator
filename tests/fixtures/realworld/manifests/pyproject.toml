@@ -1,0 +1,7 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool]
+[tool.pytest]
+ini_options = { testpaths = ["tests"] }

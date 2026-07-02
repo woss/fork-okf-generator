@@ -1,0 +1,11 @@
+{
+  "name": "okfgen-js-utils",
+  "version": "1.0.0",
+  "description": "Utility library for OKF generator JS test fixtures",
+  "main": "math.js",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.0"
+  }
+}
