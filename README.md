@@ -1,51 +1,58 @@
-[![okf-generator banner](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/banner.png)](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/banner.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/banner.png" alt="okf-generator" width="700">
+</p>
 
-[![PyPI version](https://img.shields.io/pypi/v/okf-generator?style=flat-square&label=PyPI)](https://pypi.org/project/okf-generator/)
-[![Downloads](https://img.shields.io/pypi/dm/okf-generator?style=flat-square)](https://pypi.org/project/okf-generator/)
-[![Python](https://img.shields.io/pypi/pyversions/okf-generator?style=flat-square)](https://pypi.org/project/okf-generator/)
-[![Tests](https://img.shields.io/github/actions/workflow/status/UmairBaig8/okf-generator/ci.yml?style=flat-square&label=tests)](https://github.com/UmairBaig8/okf-generator/actions)
-[![Last commit](https://img.shields.io/github/last-commit/UmairBaig8/okf-generator?style=flat-square)](https://github.com/UmairBaig8/okf-generator/commits/main)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/UmairBaig8/okf-generator/blob/main/LICENSE)
-[![OKF v0.1](https://img.shields.io/badge/OKF-v0.1-7c3aed?style=flat-square)](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing)
-[![Claude Skill](https://img.shields.io/badge/Claude-Skill-orange?style=flat-square&logo=anthropic)](https://github.com/UmairBaig8/okf-generator/blob/main/SKILL.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/UmairBaig8/okf-generator/blob/main/CONTRIBUTING.md)
-[![Agents](https://img.shields.io/badge/okf_install-6_agents-4ade80?style=flat-square)](README.md#agent-installation)
+<p align="center">
+  <a href="https://pypi.org/project/okf-generator/"><img src="https://img.shields.io/pypi/v/okf-generator?style=flat-square&label=PyPI" alt="PyPI"></a>
+  <a href="https://pypi.org/project/okf-generator/"><img src="https://img.shields.io/pypi/dm/okf-generator?style=flat-square" alt="Downloads"></a>
+  <a href="https://pypi.org/project/okf-generator/"><img src="https://img.shields.io/pypi/pyversions/okf-generator?style=flat-square" alt="Python"></a>
+  <a href="https://github.com/UmairBaig8/okf-generator/actions"><img src="https://img.shields.io/github/actions/workflow/status/UmairBaig8/okf-generator/ci.yml?style=flat-square&label=tests" alt="Tests"></a>
+  <a href="https://github.com/UmairBaig8/okf-generator/commits/main"><img src="https://img.shields.io/github/last-commit/UmairBaig8/okf-generator?style=flat-square" alt="Last commit"></a>
+  <a href="https://github.com/UmairBaig8/okf-generator/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT"></a>
+  <a href="https://github.com/UmairBaig8/okf-generator/blob/main/SKILL.md"><img src="https://img.shields.io/badge/Claude-Skill-orange?style=flat-square&logo=anthropic" alt="Claude Skill"></a>
+  <a href="https://github.com/UmairBaig8/okf-generator/blob/main/CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome"></a>
+</p>
 
-**Index any codebase into a structured knowledge bundle — then look up exact concepts for any AI coding agent.**
+<p align="center">
+  <b>Map any codebase into an interactive knowledge graph — for AI agents, local SLMs, and human architectural review.</b>
+</p>
 
-[Demo](#demo) ·
-[Quick Start](#quick-start) ·
-[Installation](#installation) ·
-[Agent Integration](#ai-agent-integration) ·
-[Supported Languages](#supported-languages--manifests) ·
-[How it compares](#how-it-comparers) ·
-[FAQ](#faq)
+<p align="center">
+  <a href="#installation">Installation</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#how-it-works">Architecture</a> ·
+  <a href="#for-ai-agents">Agents</a> ·
+  <a href="#for-local-ai--slms">Local AI</a> ·
+  <a href="#for-cicd-pipelines">CI/CD</a> ·
+  <a href="#language--manifest-coverage">Languages</a> ·
+  <a href="#faq">FAQ</a>
+</p>
+
+<br>
+
+## Visual Showcase
+
+![okf-generator demo](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/demo.gif)
+
+`okf generate` scans any repo using tree-sitter AST parsers, resolves cross-references across 10 languages, and outputs a structured knowledge graph. Explore it interactively or consume it programmatically — no LLM required.
+
+```bash
+# Generate a knowledge bundle from any codebase
+okf generate ./my_project ./okf_bundle
+
+# Explore as an interactive HTML dashboard
+okf visualize ./okf_bundle
+
+# Browse via local HTTP
+okf serve ./okf_bundle --open
+
+# Look up any concept in milliseconds
+okf lookup WorldBankConnector
+```
 
 ---
 
-## Demo
-
-[#demo](#demo)
-
-![demo](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/demo.gif)
-
-## Features
-
-🧠 **AI-agent ready** — Claude, Cursor, Copilot, Windsurf, Cline, OpenCode — any agent reads the bundle instantly.  
-⚡ **Zero LLM extraction** — fully offline, deterministic, no API key needed.  
-🌍 **10 languages + 17 manifest formats** — Python, JS/TS, Go, Java, Rust, Ruby, SQL, C, C++, C# + pip, npm, cargo, go, maven, gradle, yarn, pnpm, and more.  
-🔗 **Cross-reference linker** — imports → dependencies, function calls → caller/callee across all languages.  
-🔍 **Instant lookup** — `okf lookup` finds any class, function, or dependency in milliseconds.  
-📊 **Interactive viz** — `okf visualize` generates an HTML explorer with tree nav, ego graphs, and dark/light theme.  
-🤖 **MCP server** — `okf mcp` exposes bundles via Model Context Protocol for Claude Desktop, Cursor, and any MCP client.  
-📦 **Training data** — `okf pairs` converts bundles to JSONL for fine-tuning.  
-🔄 **Bundle diff** — `okf diff` compares two bundles (added/removed/changed).  
-🌐 **Local server** — `okf serve` launches a local HTTP server for any bundle.  
-🎮 **Interactive REPL** — `okf init` runs an interactive wizard with commands like `/lookup`, `/viz`, `/serve`, `/deps`.  
-
 ## Quick Start
-
-[#quick-start](#quick-start)
 
 ```bash
 # Install
@@ -65,88 +72,73 @@ okf init
 
 # Visualize as interactive HTML
 okf visualize ./okf_bundle
-okf serve ./okf_bundle --open
 ```
+
+---
 
 ## Installation
 
-[#installation](#installation)
-
-**One-liner:**
 ```bash
+# One-liner (macOS / Linux)
 curl -fsSL https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/scripts/install.sh | bash
+
+# Or via pip
+pip install okf-generator                        # core (offline extraction)
+pip install "okf-generator[llm]"                  # with LLM enrichment + training pairs
 ```
 
-**Or via pip:**
+---
+
+## Why — Code-Level Knowledge Graphs
+
+AI coding agents waste enormous amounts of context re-reading entire files to find one function signature or dependency version. Cloud models with 200K token windows mask this cost; local SLMs (Gemma, Llama, Phi) on a MacBook run out of memory immediately.
+
+`okf-generator` solves this by converting source code into a **deterministic, cross-referenced knowledge graph**. Using tree-sitter AST parsers across 10 languages, every function, class, module, and dependency becomes a structured node with typed edges (calls, called-by, imports, depends-on).
+
 ```bash
-pip install okf-generator           # core (offline extraction)
-pip install "okf-generator[llm]"   # with LLM enrichment + training pairs
-```
-
-## Why this exists
-
-[#why-this-exists](#why-this-exists)
-
-AI coding agents waste enormous amounts of context re-reading entire files to find one function, class, or dependency version. Ask an agent *"what does `WorldBankConnector` do?"* and it either guesses from a stale memory, or burns thousands of tokens reading the whole file to find a 12-line answer.
-
-`okf-generator` solves this by converting your source code into the [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) (OKF) v0.1 — a directory of small, structured markdown files, one per concept (function, class, module, dependency). An agent then asks a surgical question and gets a surgical answer:
-
-```
-# Before touching WorldBankConnector, look it up
+# Before touching WorldBankConnector, get its full graph context
 okf lookup WorldBankConnector
+```
 
-# CLASS: WorldBankConnector
-# Source      : StockAI/RnD/python/connectors/economic_data.py  line 51
-# Description : Fetches World Bank development indicators via wbdata API.
-# Methods     : get_indicator, search
-# Signature   : class WorldBankConnector
+```
+CLASS: WorldBankConnector
+Source      : StockAI/RnD/python/connectors/economic_data.py  line 51
+Description : Fetches World Bank development indicators via wbdata API.
+Methods     : get_indicator, search
+Signature   : class WorldBankConnector
+Calls       : [wbdata.get_indicator, pandas.DataFrame]
+Called-by   : [DataPipeline.fetch_economic]
 ```
 
 No re-reading the file. No guessing. No LLM call required.
 
-![Before and after comparison](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/before_after.svg)
+![Before and after comparison](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/before_after.svg)
 
-## How it compares
+---
 
-[#how-it-compares](#how-it-compares)
+## How It Works
 
-The OKF ecosystem is moving fast — here's where `okf-generator` sits relative to other producers:
+![okf-generator pipeline](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/workflow.png)
 
-| | **okf-generator** | Other OKF producers |
-| --- | --- | --- |
-| Language coverage | 10 languages (Python, JS/TS, Go, Java, Rust, Ruby, SQL, C, C++, C#) | Usually 1 language or doc-only |
-| Cross-reference linking | Imports → dependencies, function calls → caller/callee across all languages | Not typically supported |
-| Dependency/manifest parsing | 12 formats (pip, npm, cargo, go, maven, gradle, composer, rubygems, swiftpm, clojars, hex, +1) | Not typically supported |
-| Extraction | Zero-LLM, deterministic, offline | Often LLM-required for every concept |
-| Optional enrichment | Any OpenAI-compatible endpoint (Claude, local llama.cpp, Ollama) | Often locked to one vendor |
-| Training data export | Built-in JSONL pair generator (5 pair types) | Not typically included |
-| Agent compatibility | Any agent that can run a CLI (Claude Code, Cursor, Windsurf, Copilot, OpenCode, Cline) | Often single-agent focused |
+**1. Scan** — tree-sitter AST parsers extract every function, class, method, and module with signature, params, docstring, and return types across 10 languages.
 
-If you're choosing between OKF producers: pick `okf-generator` when you want broad language + dependency coverage with zero mandatory LLM cost, and you want the bundle to double as a fine-tuning data source.
+**2. Link** — the cross-reference linker resolves two edge types:
+- Imports → Dependencies — module imports matched against the dependency index.
+- Calls → Callees — function call sites resolved to concept IDs.
 
-## How it works
+**3. Write** — outputs an OKF v0.1 bundle: structured markdown files (one per concept) mirroring the source tree.
 
-[#how-it-works](#how-it-works)
+**4. Consume** — 8 commands: `lookup`, `pairs`, `diff`, `visualize`, `mcp`, `serve`, `init`, `summarize`.
 
-![okf-generator pipeline](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/workflow.png)
+LLM enrichment is optional, resumable, and works with any OpenAI-compatible endpoint (Claude, Ollama, llama.cpp). Extraction itself is fully deterministic and offline-capable.
 
-> **Pipeline:** `okf generate` scans your codebase → linker resolves cross-references → writes an OKF bundle → consumed via 7 commands (lookup, pairs, diff, visualize, mcp, serve, init).
+### Used by / Built for
 
-Extraction is fully deterministic and offline-capable. LLM enrichment is an optional second pass, resumable on interrupt.
+`okf-generator` was originally built to index a large, multi-domain codebase (`StockAI`/`TrainLLMs`) spanning Python data connectors, ML pipelines, and SQL schemas — the kind of project where giving an agent the whole repo as context is both slow and unaffordable in tokens. If you are working in a sprawling codebase and tired of re-explaining your own code to your AI agent every session, this is the tool that problem was built to solve.
 
-After scanning, a **cross-reference linker** builds two edge types:
-- **Imports → Dependencies** — module imports matched against the dependency index.
-- **Calls → Callees** — function call sites resolved to concept IDs.
+---
 
-## Used by / Built for
-
-[#used-by--built-for](#used-by--built-for)
-
-`okf-generator` was originally built to index a large, multi-domain codebase (`StockAI`/`TrainLLMs`) spanning Python data connectors, ML pipelines, and SQL schemas — the kind of project where giving an agent the *whole* repo as context is both slow and unaffordable in tokens. If you're working in a sprawling codebase and tired of re-explaining your own code to your AI agent every session, this is the tool that problem was built to solve.
-
-## Bundle Layout
-
-[#bundle-layout](#bundle-layout)
+## Bundle at a Glance
 
 The output mirrors your source tree — dependencies get their own organized namespace:
 
@@ -177,7 +169,7 @@ okf_bundle/
                     └── search.md               ← Function
 ```
 
-Each file is OKF v0.1 conformant:
+Each file is OKF v0.1 conformant with YAML frontmatter:
 
 ```yaml
 ---
@@ -194,17 +186,156 @@ tags:
   - git:repo:TrainLLMs
 timestamp: '2026-05-23T09:01:21Z'
 ---
-
-# WorldBankConnector
-
-...signature, docstring, params, returns, methods, related concepts...
 ```
 
+---
+
+## Interactive Visualization
+
+`okf visualize` generates a self-contained HTML dashboard — no server, no installation, works offline:
+
+```bash
+okf visualize ./okf_bundle ./viz.html
+# Open viz.html in any browser
+```
+
+The visualization uses D3.js with:
+- **Force-directed graph** — color-coded nodes by concept type (Class, Function, Module, Dependency)
+- **Relationship edges** — calls, called-by, imports, related
+- **Search/filter** — by name, type, ecosystem
+- **Tooltip on hover** — description + resource location
+- **Pan/zoom** — navigate large graphs
+- **Dark/light theme** — toggle at runtime
+
+---
+
+## For AI Agents
+
+Every concept in the bundle is deterministic, typed, and cross-referenced — agents get surgical precision without burning context:
+
+| Capability | How |
+|---|---|
+| Zero-LLM lookups | `okf lookup <Name>` returns full concept detail in milliseconds |
+| Type filters | `okf lookup --type Function | Class | Dependency` |
+| Ecosystem queries | `okf lookup --tag ecosystem:pip` |
+| Source file queries | `okf lookup --file path/to/file.py` |
+| JSON output | `okf lookup --json <Name>` for programmatic agent use |
+| MCP protocol | `okf mcp ./okf_bundle` exposes via Model Context Protocol |
+| Summary map | `cat ./okf_bundle/SUMMARY.md` primes full context |
+
+### Quick setup for any agent:
+
+Add to your agent instructions or custom rules:
+
+```markdown
+This project has an OKF knowledge bundle at ./okf_bundle/.
+- Use `okf lookup <Name>` for full concept context.
+- Use `okf lookup --type <Type>` to filter by type.
+- Read `SUMMARY.md` for the full knowledge map.
+```
+
+### Token efficiency
+
+| Optimization | Agent impact |
+|---|---|
+| Incremental access — one concept, not whole files | Saves 80-95% token cost vs reading source |
+| Structured metadata in YAML frontmatter | Agent extracts info without parsing code |
+| Cross-reference edges (calls/called-by) | Multi-hop reasoning without grep |
+| Deterministic types | Agent filters by type precisely |
+
+> Full agent integration guide — OpenCode commands, Cursor rules, Copilot instructions, MCP setup: **[docs/agent-integration.md](docs/agent-integration.md)**
+
+> Automated agent setup — `okf install claude`, `okf install opencode`, `okf install cursor`, etc: see [Agent Installation](#agent-installation).
+
+---
+
+## For Local AI & SLMs
+
+Cloud models have massive context windows. Local SLMs (Gemma 3 4B, Llama 3.2, Phi-3) running on a MacBook Pro or Air do not — they run out of memory if you try to feed an entire repository.
+
+`okf lookup` solves this with **exact-symbol retrieval**: the agent sends a 50-token query and gets back a 200-token concept card. No embeddings, no vector DB, no RAG pipeline. This makes local coding assistants viable for enterprise-scale codebases.
+
+```bash
+# Enrichment with a local llama.cpp server (MacBook-friendly)
+OKF_ENRICH=1 \
+OKF_BASE_URL="http://localhost:8080/v1" \
+OKF_API_KEY="llamabarn" \
+OKF_MODEL="ggml-org/gemma-3-4b-it-qat-GGUF:Q4_0" \
+OKF_MAX_WORKERS=2 \
+okf generate ./my_project ./okf_bundle
+```
+
+Enrichment works with any OpenAI-compatible endpoint — Ollama, llama.cpp, vLLM, or cloud APIs (Claude, GPT). It is **resumable**: interrupt and rerun freely, already-enriched concepts are skipped.
+
+---
+
+## For CI/CD Pipelines
+
+Deterministic + fully offline = ideal for automated pipelines:
+
+```yaml
+# .github/workflows/okf-bundle.yml
+name: Generate OKF Bundle
+on:
+  push:
+    branches: [main]
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install okf-generator
+      - run: okf generate ./src ./okf_bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: okf-bundle
+          path: ./okf_bundle
+```
+
+Push bundles to S3/GCS/Azure for centralized multi-tenant access. Serve them as static websites for zero-infrastructure browsing.
+
+> Full CI/CD guide — GitLab, pre-commit hooks, S3 static hosting, monorepo strategies: **[docs/ci-cd.md](docs/ci-cd.md)**
+
+---
+
+## Language & Manifest Coverage
+
+### Code Languages (10)
+
+| Language | Parser | Extracts |
+|---|---|---|
+| Python | stdlib `ast` | Functions, classes, params, return types, docstrings |
+| JavaScript / TypeScript | tree-sitter | Functions, arrow fns, classes, JSDoc |
+| Go | tree-sitter | Funcs, methods, structs, interfaces, GoDoc |
+| Java | tree-sitter | Classes, methods, constructors, Javadoc |
+| Rust | tree-sitter | Fns, structs, enums, traits, impl blocks, `///` |
+| Ruby | tree-sitter | Defs, classes, modules, `#` comments |
+| C | tree-sitter | Functions, structs with `/**` doc comments |
+| C++ | tree-sitter | Functions, classes, structs, methods with `///` |
+| C# | tree-sitter | Classes, methods, top-level functions |
+| SQL | tree-sitter | Tables, views, functions, indexes, types, triggers |
+
+### Manifest / Build Formats (17)
+
+`requirements.txt` · `pyproject.toml` · `package.json` · `Cargo.toml` · `Cargo.lock` · `yarn.lock` · `pnpm-lock.yaml` · `go.mod` · `go.sum` · `poetry.lock` · `composer.json` · `pom.xml` · `Gemfile` · `build.gradle` / `.kts` · `Package.swift` · `project.clj` · `mix.exs`
+
+> Full table with parser details + architectural query examples: **[docs/languages-and-manifests.md](docs/languages-and-manifests.md)**
+
+**Architectural query example** — find every microservice depending on a deprecated Rust crate:
+
+```bash
+okf lookup --type Dependency --tag ecosystem:cargo --compact
+okf lookup --type Dependency openssl
+```
+
+Same logic works for pip, npm, go, maven — any of the 17 supported formats. Pin a vulnerable package version across every service in seconds.
+
+---
+
 ## CLI Reference
-
-[#cli-reference](#cli-reference)
-
-Full documentation for every command:
 
 ```bash
 okf --help              Show available commands
@@ -213,7 +344,7 @@ okf --version           Show version
 ```
 
 | Command | Usage |
-|---------|-------|
+|---|---|
 | `generate` | `okf generate <source_dir> [output_dir]` |
 | `lookup` | `okf lookup <query>` |
 | `diff` | `okf diff <old_bundle> <new_bundle>` |
@@ -225,180 +356,11 @@ okf --version           Show version
 | `mcp` | `okf mcp <bundle_dir>` |
 | `serve` | `okf serve [dir] [--port] [--open]` |
 
-See [docs/cli-reference.md](https://github.com/UmairBaig8/okf-generator/blob/main/docs/cli-reference.md) for full options, environment variables, and examples.
+> Full options, environment variables, and examples: **[docs/cli-reference.md](docs/cli-reference.md)**
 
-## Supported Languages & Manifests
-
-[#supported-languages--manifests](#supported-languages--manifests)
-
-### Code Languages
-
-[#code-languages](#code-languages)
-
-| Language | Parser | Extracts |
-| --- | --- | --- |
-| Python | stdlib `ast` | Functions, classes, params, return types, docstrings |
-| JavaScript / TypeScript | tree-sitter | Functions, arrow fns, classes, JSDoc |
-| Go | tree-sitter | Funcs, methods, structs, interfaces, GoDoc |
-| Java | tree-sitter | Classes, methods, constructors, Javadoc |
-| Rust | tree-sitter | Fns, structs, enums, traits, impl blocks, `///` |
-| Ruby | tree-sitter | Defs, classes, modules, `#` comments |
-| C | tree-sitter | Functions, structs with `/**` doc comments |
-| C++ | tree-sitter | Functions, classes, structs, methods with `///` doc comments |
-| C# | tree-sitter | Classes, methods, top-level functions |
-| SQL | tree-sitter | Tables, views, functions, indexes, types, triggers with preceding `--`/`/* */` comments |
-
-### Manifest / Build Files
-
-[#manifest--build-files](#manifest--build-files)
-
-| Format | Parser | Extracts |
-| --- | --- | --- |
-| `requirements.txt` | regex | pip package names + version constraints |
-| `pyproject.toml` | `tomllib` | PEP 621 deps + optional-dependencies + Poetry legacy |
-| `package.json` | `json` | npm/Node dependencies + devDependencies |
-| `Cargo.toml` | `tomllib` | Rust crate deps + dev/build-dependencies |
-| `Cargo.lock` | `tomllib` | Rust lockfile — pinned versions from `[[package]]` entries |
-| `yarn.lock` | regex | Yarn lockfile (v1) — package name + pinned versions |
-| `pnpm-lock.yaml` | `yaml` | pnpm lockfile — package name + version + dev flag |
-| `go.mod` | regex | Go module deps + `// indirect` flag |
-| `go.sum` | regex | Go checksum lockfile — deduplicated module versions |
-| `poetry.lock` | `tomllib` | Python Poetry lockfile — `[[package]]` with dev category detection |
-| `composer.json` | `json` | PHP packages (skips `php`/`ext-*` platform entries) |
-| `pom.xml` | `xml.etree.ElementTree` | Maven dependencies + `test`/`provided` scope → dev |
-| `Gemfile` | regex | Ruby gems + `group :test/:development` → dev |
-| `build.gradle` / `.kts` | regex | Gradle deps (Groovy + Kotlin DSL) + `testImplementation` → dev |
-| `Package.swift` | regex | SwiftPM packages from `.package(url:from:)` |
-| `project.clj` | regex | Clojars deps + `:dev` profile |
-| `mix.exs` | regex | Hex packages + `only: :dev/:test` → dev |
-
-## LLM Enrichment
-
-[#llm-enrichment](#llm-enrichment)
-
-Works with any OpenAI-compatible endpoint — Claude, Ollama, llama.cpp, etc:
-
-```bash
-# Using a local llama.cpp server
-OKF_ENRICH=1 \
-OKF_BASE_URL="http://localhost:8080/v1" \
-OKF_API_KEY="llamabarn" \
-OKF_MODEL="ggml-org/gemma-3-4b-it-qat-GGUF:Q4_0" \
-OKF_MAX_WORKERS=2 \
-okf generate ./my_project ./okf_bundle
-```
-
-Enrichment is **resumable** — interrupt and rerun freely. Already-enriched concepts are skipped.
-
-## AI Agent Integration
-
-[#ai-agent-integration](#ai-agent-integration)
-
-okf-generator works with **any AI coding agent** — the output is plain markdown files that every agent can read.
-
-### OpenCode / Claude Code
-
-[#opencode--claude-code](#opencode--claude-code)
-
-```bash
-# Tell your agent about the bundle
-cat >> AGENTS.md << 'EOF'
-## OKF Knowledge Bundle
-Before working on any class or function, look it up:
-  okf lookup --bundle ./okf_bundle <ConceptName>
-EOF
-
-# Add a custom command (OpenCode)
-mkdir -p .opencode/commands
-echo "RUN okf lookup --bundle ./okf_bundle \$NAME" > .opencode/commands/lookup.md
-```
-
-Then: `/lookup NAME=WorldBankConnector`
-
-### Cursor / Windsurf / Cline
-
-[#cursor--windsurf--cline](#cursor--windsurf--cline)
-
-Add to `.cursorrules` or agent instructions:
-
-```
-Before editing a function or class, run:
-  okf lookup --bundle ./okf_bundle <Name>
-To see dependencies:
-  okf lookup --bundle ./okf_bundle --type Dependency
-```
-
-### GitHub Copilot
-
-[#github-copilot](#github-copilot)
-
-Reference OKF bundle files in your `/.github/copilot-instructions.md`:
-
-```
-Project knowledge is indexed in ./okf_bundle/
-  - okf lookup <Name> returns full concept context
-  - okf lookup --type Dependency returns dependency info
-```
-
-### Recommended system prompt
-
-When setting up agent instructions, include:
-
-```markdown
-This project has an OKF knowledge bundle at ./okf_bundle/.
-- Use `okf lookup <Name>` to get full concept context.
-- Use `okf lookup --type <Type>` to filter by type (Class, Function, Dependency).
-- Use `okf lookup --tag ecosystem:<name>` for ecosystem-specific queries.
-- Read `SUMMARY.md` for the full knowledge map.
-```
-
-### Token efficiency
-
-| Optimization | How okf-generator helps | Agent impact |
-|-------------|------------------------|--------------|
-| Deterministic types | Every concept has `type: Function`, `type: Class`, `type: Dependency` | Agent filters by type precisely |
-| Incremental access | `okf lookup <Name>` returns one concept, not whole files | Saves 80-95% token cost vs reading source |
-| Structured metadata | Signature, params, returns in YAML frontmatter | Agent extracts info without parsing code |
-| Cross-reference edges | Calls / Called By / Used By in each concept | Enables multi-hop reasoning without grep |
-
-### Any agent with RUN capability
-
-[#any-agent-with-run-capability](#any-agent-with-run-capability)
-
-```bash
-# Prime full context
-cat ./okf_bundle/SUMMARY.md
-
-# Look up a specific concept
-okf lookup --bundle ./okf_bundle WorldBankConnector
-
-# List dependencies
-okf lookup --bundle ./okf_bundle --type Dependency
-
-# JSON for programmatic agent use
-okf lookup --bundle ./okf_bundle --json WorldBankConnector
-```
-
-See [docs/opencode-integration.md](https://github.com/UmairBaig8/okf-generator/blob/main/references/opencode-integration.md) for full OpenCode setup.
-
-## Python API
-
-[#python-api](#python-api)
-
-See [docs/python-api.md](https://github.com/UmairBaig8/okf-generator/blob/main/docs/python-api.md) for the full API reference.
-
-```python
-from okf.generator import scan_codebase, write_bundle, write_summary
-from okf.lookup import load_bundle, search
-
-concepts = scan_codebase("./my_project")
-write_bundle(concepts, "./okf_bundle", "my_project", ["initial generation"])
-write_summary("my_project", concepts, "./okf_bundle", {})
-```
+---
 
 ## Training Data
-
-[#training-data](#training-data)
 
 Convert your OKF bundle into JSONL training pairs for fine-tuning:
 
@@ -409,9 +371,30 @@ okf pairs ./okf_bundle ./train.jsonl
 
 Each pair is in chat format compatible with most fine-tuning pipelines.
 
-## Agent Installation
+- **Static pairs** (no LLM): `SKIP_SYNTH=1 okf pairs ...`
+- **LLM-synthesized pairs**: set `SYNTH_MODEL`, `QA_PER_CONCEPT`, `PAIR_TYPES`
 
-[#agent-installation](#agent-installation)
+---
+
+## Python API
+
+```python
+from okf.generator import scan_codebase, write_bundle, write_summary
+from okf.lookup import load_bundle, search
+
+concepts = scan_codebase("./my_project")
+write_bundle(concepts, "./okf_bundle", "my_project", ["initial generation"])
+write_summary("my_project", concepts, "./okf_bundle", {})
+
+bundle = load_bundle("./okf_bundle")
+results = search(bundle, tokens=["WorldBankConnector"])
+```
+
+> Full API reference with `Concept` dataclass: **[docs/python-api.md](docs/python-api.md)**
+
+---
+
+## Agent Installation
 
 Install integration for any AI agent in one command:
 
@@ -431,7 +414,7 @@ okf install cline       # Cline rules
 **What each install does:**
 
 | Agent | Files created | Effect |
-|-------|---------------|--------|
+|---|---|---|
 | Claude Code | `~/.config/opencode/skills/okf-generator/SKILL.md` | Auto-triggers on phrases like "index my codebase" |
 | OpenCode | `.opencode/commands/lookup.md` | `/lookup NAME=<ConceptName>` |
 | Copilot | `.github/copilot-instructions.md` | Auto-loaded in VS Code |
@@ -439,15 +422,25 @@ okf install cline       # Cline rules
 | Windsurf | `.windsurfrules` | Auto-loaded by Windsurf |
 | Cline | `.clinerules` | Auto-loaded by Cline |
 
-Or via the one-liner installer:
+---
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/scripts/install.sh | bash
-```
+## How It Compares
+
+| | **okf-generator** | Other OKF producers |
+|---|---|---|
+| Language coverage | 10 languages (Python, JS/TS, Go, Java, Rust, Ruby, SQL, C, C++, C#) | Usually 1 language or doc-only |
+| Cross-reference linking | Imports → dependencies, function calls → caller/callee across all languages | Not typically supported |
+| Dependency/manifest parsing | 17 formats (pip, npm, cargo, go, maven, gradle, composer, rubygems, swiftpm, clojars, hex, +7) | Not typically supported |
+| Extraction | Zero-LLM, deterministic, offline | Often LLM-required for every concept |
+| Optional enrichment | Any OpenAI-compatible endpoint (Claude, local llama.cpp, Ollama) | Often locked to one vendor |
+| Training data export | Built-in JSONL pair generator (5 pair types) | Not typically included |
+| Agent compatibility | Any agent that can run a CLI (Claude Code, Cursor, Windsurf, Copilot, OpenCode, Cline) | Often single-agent focused |
+
+If you are choosing between OKF producers: pick `okf-generator` when you want broad language + dependency coverage with zero mandatory LLM cost, and you want the bundle to double as a fine-tuning data source.
+
+---
 
 ## FAQ
-
-[#faq](#faq)
 
 **Does this require an API key or internet connection?**
 No. Core extraction (`okf generate`) is fully offline and deterministic — no LLM call is made unless you explicitly enable `OKF_ENRICH=1`.
@@ -455,8 +448,8 @@ No. Core extraction (`okf generate`) is fully offline and deterministic — no L
 **How is this different from RAG / vector search?**
 RAG retrieves chunks by semantic similarity, which is approximate and can miss exact symbols. `okf lookup` is exact: it indexes real functions, classes, modules, and dependencies by name and resolves to the precise concept, with zero embedding/vector infrastructure required.
 
-**What happens if my language isn't supported?**
-Unsupported files are skipped, not dropped silently from the bundle log — `log.md` records what was scanned. Adding a new language is a self-contained tree-sitter grammar mapping; see [CONTRIBUTING.md](CONTRIBUTING.md) for a starting point — it's a listed good-first-issue.
+**What happens if my language is not supported?**
+Unsupported files are skipped, not dropped silently — `log.md` records what was scanned. Adding a new language is a self-contained tree-sitter grammar mapping; see [CONTRIBUTING.md](CONTRIBUTING.md) — it is a listed good-first-issue.
 
 **Does this work on monorepos / very large codebases?**
 Yes — the bundle mirrors your source tree, so scanning is linear in file count. For very large repos, scope `okf generate` to a subdirectory if you only need part of the codebase indexed.
@@ -465,13 +458,11 @@ Yes — the bundle mirrors your source tree, so scanning is linear in file count
 Yes. `okf generate` + `okf lookup` together form a complete, zero-LLM workflow. LLM enrichment and `okf pairs` synthesis are optional layers on top.
 
 **Is the bundle safe to commit to git?**
-Yes, and that's the intended workflow — bundles are plain markdown, diff cleanly, and version alongside the code they describe.
+Yes, and that is the intended workflow — bundles are plain markdown, diff cleanly, and version alongside the code they describe.
+
+---
 
 ## Contributing
-
-[#contributing](#contributing)
-
-Contributions are welcome! See [CONTRIBUTING.md](https://github.com/UmairBaig8/okf-generator/blob/main/CONTRIBUTING.md) for guidelines.
 
 ```bash
 git clone https://github.com/UmairBaig8/okf-generator
@@ -482,14 +473,18 @@ pytest tests/
 
 **Good first issues:** adding a new language parser, improving fuzzy search scoring, adding incremental/diff-based regeneration.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+
+---
+
 ## Acknowledgments
 
-[#acknowledgments](#acknowledgments)
+`okf-generator` is an independent, third-party implementation of the [Open Knowledge Format (OKF) v0.1](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing), a knowledge-representation spec introduced by Google Cloud in June 2026. See the [full v0.1 specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) for the conformance rules this generator targets.
 
-`okf-generator` is an independent, third-party implementation of the [Open Knowledge Format (OKF) v0.1](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing), a knowledge-representation spec introduced by Google Cloud in June 2026. See the [full v0.1 specification](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) for the conformance rules this generator targets. This project is not built, maintained, or endorsed by Google.
+This project is not built, maintained, or endorsed by Google.
+
+---
 
 ## License
 
-[#license](#license)
-
-[MIT](https://github.com/UmairBaig8/okf-generator/blob/main/LICENSE) — Copyright © 2026 Umair Baig
+[MIT](LICENSE) — Copyright © 2026 Umair Baig
