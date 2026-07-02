@@ -33,10 +33,11 @@
 
 🧠 **AI-agent ready** — Claude, Cursor, Copilot, Windsurf, Cline, OpenCode — any agent reads the bundle instantly.  
 ⚡ **Zero LLM extraction** — fully offline, deterministic, no API key needed.  
-🌍 **7 languages + 15 manifest formats** — Python, JS/TS, Go, Java, Rust, Ruby, SQL + pip, npm, cargo, go, maven, gradle, and more.  
+🌍 **10 languages + 17 manifest formats** — Python, JS/TS, Go, Java, Rust, Ruby, SQL, C, C++, C# + pip, npm, cargo, go, maven, gradle, yarn, pnpm, and more.  
 🔗 **Cross-reference linker** — imports → dependencies, function calls → caller/callee across all languages.  
 📦 **Training data pipeline** — convert any bundle to JSONL pairs for fine-tuning.  
 🔍 **Instant lookup** — find any function, class, or dependency in milliseconds.  
+📊 **Bundle visualization** — `okf visualize` generates an interactive HTML explorer with tree nav, ego graphs, and light/dark theme.  
 
 ## Quick Start
 
@@ -102,7 +103,7 @@ The OKF ecosystem is moving fast — here's where `okf-generator` sits relative 
 
 | | **okf-generator** | Other OKF producers |
 | --- | --- | --- |
-| Language coverage | 7 languages (Python, JS/TS, Go, Java, Rust, Ruby, SQL) | Usually 1 language or doc-only |
+| Language coverage | 10 languages (Python, JS/TS, Go, Java, Rust, Ruby, SQL, C, C++, C#) | Usually 1 language or doc-only |
 | Cross-reference linking | Imports → dependencies, function calls → caller/callee across all languages | Not typically supported |
 | Dependency/manifest parsing | 12 formats (pip, npm, cargo, go, maven, gradle, composer, rubygems, swiftpm, clojars, hex, +1) | Not typically supported |
 | Extraction | Zero-LLM, deterministic, offline | Often LLM-required for every concept |
@@ -233,6 +234,9 @@ See [docs/cli-reference.md](https://github.com/UmairBaig8/okf-generator/blob/mai
 | Java | tree-sitter | Classes, methods, constructors, Javadoc |
 | Rust | tree-sitter | Fns, structs, enums, traits, impl blocks, `///` |
 | Ruby | tree-sitter | Defs, classes, modules, `#` comments |
+| C | tree-sitter | Functions, structs with `/**` doc comments |
+| C++ | tree-sitter | Functions, classes, structs, methods with `///` doc comments |
+| C# | tree-sitter | Classes, methods, top-level functions |
 | SQL | tree-sitter | Tables, views, functions, indexes, types, triggers with preceding `--`/`/* */` comments |
 
 ### Manifest / Build Files
@@ -246,6 +250,8 @@ See [docs/cli-reference.md](https://github.com/UmairBaig8/okf-generator/blob/mai
 | `package.json` | `json` | npm/Node dependencies + devDependencies |
 | `Cargo.toml` | `tomllib` | Rust crate deps + dev/build-dependencies |
 | `Cargo.lock` | `tomllib` | Rust lockfile — pinned versions from `[[package]]` entries |
+| `yarn.lock` | regex | Yarn lockfile (v1) — package name + pinned versions |
+| `pnpm-lock.yaml` | `yaml` | pnpm lockfile — package name + version + dev flag |
 | `go.mod` | regex | Go module deps + `// indirect` flag |
 | `go.sum` | regex | Go checksum lockfile — deduplicated module versions |
 | `poetry.lock` | `tomllib` | Python Poetry lockfile — `[[package]]` with dev category detection |
