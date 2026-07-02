@@ -10,6 +10,7 @@ import argparse
 import http.server
 import os
 import socketserver
+import subprocess
 import sys
 import webbrowser
 from pathlib import Path
@@ -35,15 +36,16 @@ def read_pid() -> int | None:
     return None
 
 
-def stop_server():
+def stop_server(silent=False):
     pid = read_pid()
-    if pid is None:
-        print("No running okf serve found.")
-        sys.exit(1)
-    os.kill(pid, 15)  # SIGTERM
+    if pid is not None:
+        try:
+            os.kill(pid, 15)
+            if not silent:
+                print(f"  Stopped previous server (PID {pid}).")
+        except ProcessLookupError:
+            pass
     PID_FILE.unlink(missing_ok=True)
-    print(f"Stopped server (PID {pid}).")
-    sys.exit(0)
 
 
 class VizzHandler(http.server.SimpleHTTPRequestHandler):
@@ -74,6 +76,10 @@ def main():
 
     if args.stop:
         stop_server()
+        sys.exit(0)
+
+    # Stop any existing server on this port before starting
+    stop_server(silent=True)
 
     directory = Path(args.bundle_dir).resolve()
     if not directory.exists():
@@ -82,17 +88,34 @@ def main():
 
     os.chdir(directory)
 
+    # Auto-generate viz if missing
     if not os.path.exists("viz.html"):
-        print(f"  No viz.html found in {directory}. Run: okf visualize .")
-        print(f"  Serving directory listing at http://{args.host}:{args.port}")
-    else:
-        url = f"http://{args.host}:{args.port}/viz.html"
+        bundle_marker = directory / "index.md"
+        if bundle_marker.exists():
+            print(f"  Generating viz.html from {directory.name}...")
+            try:
+                result = subprocess.run(["okf", "visualize", str(directory)], capture_output=True, text=True, timeout=120)
+                if result.returncode != 0:
+                    print(f"  WARNING: visualize failed (run 'okf visualize {directory}' manually)")
+                else:
+                    print(f"  {result.stdout.strip()}")
+            except FileNotFoundError:
+                print(f"  WARNING: 'okf' not found on PATH. Run 'okf visualize {directory}' manually.")
+            except subprocess.TimeoutExpired:
+                print(f"  WARNING: visualize timed out. Run 'okf visualize {directory}' manually.")
+
+    url = f"http://{args.host}:{args.port}/viz.html"
+    has_viz = os.path.exists("viz.html")
+    if has_viz:
         print(f"  OKF Viz: {url}")
+    else:
+        print(f"  No viz.html found in {directory.name}.")
+        print(f"  {url.replace('/viz.html', '')}")
 
     write_pid()
 
-    if args.open and os.path.exists("viz.html"):
-        webbrowser.open(f"http://{args.host}:{args.port}/viz.html")
+    if args.open and has_viz:
+        webbrowser.open(url)
     elif args.open:
         webbrowser.open(f"http://{args.host}:{args.port}")
 
