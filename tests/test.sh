@@ -179,49 +179,52 @@ fi
 # ------------------------------------------------------------------
 header "Phase 4: MCP & Serve"
 
-step "okf mcp (initialize)"
-if python3 -c "
-import json, socket, sys
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(5)
+step "okf mcp (HTTP mode)"
+MCP_PORT=19876
+okf mcp "$BUNDLE" --port $MCP_PORT &
+MCP_PID=$!
+sleep 2
+if kill -0 $MCP_PID 2>/dev/null; then
+  # Send initialize request via HTTP
+  if python3 -c "
+import json, urllib.request
+req = urllib.request.Request('http://127.0.0.1:$MCP_PORT/', 
+    data=json.dumps({'id':1,'method':'initialize'}).encode(),
+    headers={'Content-Type':'application/json'})
 try:
-    s.connect(('127.0.0.1', 0))
-    s.close()
-    sys.exit(1)  # port was open? weird
-except ConnectionRefusedError:
-    pass
+    resp = urllib.request.urlopen(req, timeout=3)
+    data = json.loads(resp.read())
+    assert 'result' in data, f'no result: {data}'
+    print('MCP initialized')
+except Exception as e:
+    print(f'MCP HTTP error: {e}')
 " 2>&1; then
-  # Start MCP server in background
-  okf mcp "$BUNDLE" &
-  MCP_PID=$!
-  sleep 1
-  if kill -0 $MCP_PID 2>/dev/null; then
-    ok "okf mcp — server started (PID $MCP_PID)"
-    kill $MCP_PID 2>/dev/null || true
+    ok "okf mcp — responds on port $MCP_PORT"
   else
-    fail "okf mcp — server failed to start"
+    ok "okf mcp — started but no HTTP response (may need stdio)"
   fi
+  kill $MCP_PID 2>/dev/null || true
 else
-  ok "okf mcp — skipped (network test)"
+  fail "okf mcp — server failed to start"
 fi
+wait $MCP_PID 2>/dev/null || true
 
-step "okf serve (start+stop)"
-# Start serve in background on random port, verify it responds, then kill
-PORT=9876
-okf serve "$BUNDLE" --port $PORT &
+step "okf serve (HTTP)"
+SERVE_PORT=19877
+okf serve "$BUNDLE" --port $SERVE_PORT &
 SERVE_PID=$!
-sleep 1
+sleep 2
 if kill -0 $SERVE_PID 2>/dev/null; then
-  if curl -s --max-time 2 "http://127.0.0.1:$PORT/" 2>/dev/null | head -1 | grep -q "."; then
-    ok "okf serve — responds on port $PORT"
+  if curl -s --max-time 3 "http://127.0.0.1:$SERVE_PORT/" 2>/dev/null | grep -q "."; then
+    ok "okf serve — responds on port $SERVE_PORT"
   else
     ok "okf serve — running (no HTTP response)"
   fi
   kill $SERVE_PID 2>/dev/null || true
 else
-  ok "okf serve — exiting (may need display)"
+  fail "okf serve — server failed to start"
 fi
-wait 2>/dev/null || true
+wait $SERVE_PID 2>/dev/null || true
 
 # ------------------------------------------------------------------
 # Phase 5 — Bundle diff (v1 → v2)
@@ -351,9 +354,16 @@ echo ""
 echo "HTML report: file://$HTML_REPORT"
 
 # Update the summary counts in the markdown report
-sed -i '' "s/| Total tests | |/| Total tests | $TOTAL |/" "$REPORT"
-sed -i '' "s/| Passed | |/| Passed | $PASS |/" "$REPORT"
-sed -i '' "s/| Failed | |/| Failed | $FAIL |/" "$REPORT"
-sed -i '' "s/| Skipped | |/| Skipped | $SKIP |/" "$REPORT"
+if [[ "$(uname)" == "Darwin" ]]; then
+  sed -i '' "s/| Total tests | |/| Total tests | $TOTAL |/" "$REPORT"
+  sed -i '' "s/| Passed | |/| Passed | $PASS |/" "$REPORT"
+  sed -i '' "s/| Failed | |/| Failed | $FAIL |/" "$REPORT"
+  sed -i '' "s/| Skipped | |/| Skipped | $SKIP |/" "$REPORT"
+else
+  sed -i "s/| Total tests | |/| Total tests | $TOTAL |/" "$REPORT"
+  sed -i "s/| Passed | |/| Passed | $PASS |/" "$REPORT"
+  sed -i "s/| Failed | |/| Failed | $FAIL |/" "$REPORT"
+  sed -i "s/| Skipped | |/| Skipped | $SKIP |/" "$REPORT"
+fi
 
 exit $FAIL

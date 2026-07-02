@@ -227,7 +227,7 @@ class BundleMCPServer:
 def main():
     parser = argparse.ArgumentParser(description="MCP server for OKF bundles.")
     parser.add_argument("bundle_dir", help="Path to OKF bundle directory")
-    parser.add_argument("--port", "-p", type=int, default=0, help="HTTP port (omit for stdio mode)")
+    parser.add_argument("--port", "-p", type=int, default=0, help="HTTP port (omit or 0 for stdio mode)")
     args = parser.parse_args()
 
     bundle_dir = Path(args.bundle_dir).resolve()
