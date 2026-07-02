@@ -67,7 +67,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("bundle_dir", nargs="?", default=".", help="Directory to serve (default: current dir)")
+    parser.add_argument("bundle_dir", nargs="?", default="./okf_bundle", help="Directory to serve (default: ./okf_bundle)")
     parser.add_argument("--port", "-p", type=int, default=PORT, help=f"Port (default: {PORT})")
     parser.add_argument("--host", default=HOST, help=f"Host (default: {HOST})")
     parser.add_argument("--open", "-o", action="store_true", help="Open browser automatically")
