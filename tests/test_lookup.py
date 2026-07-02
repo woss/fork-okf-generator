@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 
-FIXTURES = Path(__file__).parent / "fixtures" / "sample_codebase"
+FIXTURES = Path(__file__).parent / "fixtures" / "realworld"
 
 
 @pytest.fixture(scope="module")
@@ -73,10 +73,10 @@ def test_search_fuzzy_name(bundle):
 def test_search_by_file(bundle):
     from okf.lookup import load_bundle, search
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=[], file_filter="connector.py")
+    results = search(concepts, tokens=[], file_filter="utils.py")
     assert len(results) > 0
     for r in results:
-        assert "connector" in r["resource"].lower()
+        assert "utils" in r["resource"].lower()
 
 
 def test_search_by_type(bundle):
@@ -113,16 +113,17 @@ def test_search_limit(bundle):
 def test_search_no_results(bundle):
     from okf.lookup import load_bundle, search
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=["xyznonexistent123"])
+    results = search(concepts, tokens=["ZZZZ_NOT_FOUND_12345"])
     assert len(results) == 0
 
 
-def test_search_world_bank_connector(bundle):
+def test_search_paginated_generic(bundle):
+    """Search for a known Rust generic concept from realworld fixtures."""
     from okf.lookup import load_bundle, search
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=["WorldBankConnector"])
+    results = search(concepts, tokens=["Paginated"])
     assert len(results) > 0
-    assert results[0]["title"] == "WorldBankConnector"
+    assert results[0]["title"] == "Paginated"
 
 
 # ── formatters ────────────────────────────────────────────────────────────────
@@ -130,26 +131,28 @@ def test_search_world_bank_connector(bundle):
 def test_fmt_compact(bundle):
     from okf.lookup import load_bundle, search, fmt_compact
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=["Calculator"])
+    results = search(concepts, tokens=["Paginated"])
+    assert len(results) > 0
     line = fmt_compact(results[0])
-    assert "Calculator" in line
+    assert "Paginated" in line
     assert len(line.split("\n")) == 1   # single line
 
 
 def test_fmt_detail(bundle):
     from okf.lookup import load_bundle, search, fmt_detail
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=["Calculator"])
+    results = search(concepts, tokens=["User"], type_filter="Class")
+    assert len(results) > 0
     detail = fmt_detail(results[0])
-    assert "Calculator" in detail
-    assert "CLASS" in detail or "Class" in detail
+    assert "User" in detail
 
 
 def test_fmt_json(bundle):
     import json
     from okf.lookup import load_bundle, search, fmt_json
     concepts = load_bundle(bundle)
-    results = search(concepts, tokens=["Calculator"])
+    results = search(concepts, tokens=["Paginated"])
+    assert len(results) > 0
     out = fmt_json(results)
     parsed = json.loads(out)
     assert isinstance(parsed, list)

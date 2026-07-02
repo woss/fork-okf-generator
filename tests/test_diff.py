@@ -3,13 +3,14 @@
 import json
 from pathlib import Path
 
+SRC = Path(__file__).parent / "fixtures" / "realworld" / "python" / "easy"
+
 
 def test_diff_identical_bundles(tmp_path):
     """Two copies of the same bundle should have no differences."""
     from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles
-    src = Path(__file__).parent / "fixtures" / "sample_codebase"
-    concepts = scan_codebase(src)
+    concepts = scan_codebase(SRC)
     write_bundle(concepts, tmp_path / "a", "sample", ["test"])
     write_bundle(concepts, tmp_path / "b", "sample", ["test"])
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
@@ -22,8 +23,7 @@ def test_diff_added_concept(tmp_path):
     """Adding a new concept file shows as added."""
     from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles
-    src = Path(__file__).parent / "fixtures" / "sample_codebase"
-    concepts_a = scan_codebase(src)
+    concepts_a = scan_codebase(SRC)
     write_bundle(concepts_a, tmp_path / "a", "sample", ["test"])
 
     # Create a modified version with an extra concept
@@ -40,8 +40,7 @@ def test_diff_removed_concept(tmp_path):
     """Removing a concept file shows as removed."""
     from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles
-    src = Path(__file__).parent / "fixtures" / "sample_codebase"
-    concepts = scan_codebase(src)
+    concepts = scan_codebase(SRC)
     write_bundle(concepts, tmp_path / "a", "sample", ["test"])
 
     import shutil
@@ -60,8 +59,7 @@ def test_diff_changed_concept(tmp_path):
     """Modifying a concept's description shows as changed."""
     from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles
-    src = Path(__file__).parent / "fixtures" / "sample_codebase"
-    concepts = scan_codebase(src)
+    concepts = scan_codebase(SRC)
     write_bundle(concepts, tmp_path / "a", "sample", ["test"])
 
     import shutil
@@ -81,8 +79,7 @@ def test_diff_json_output(tmp_path):
     """JSON output is valid and contains expected keys."""
     from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles, fmt_json
-    src = Path(__file__).parent / "fixtures" / "sample_codebase"
-    concepts = scan_codebase(src)
+    concepts = scan_codebase(SRC)
     write_bundle(concepts, tmp_path / "a", "sample", ["test"])
     write_bundle(concepts, tmp_path / "b", "sample", ["test"])
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
