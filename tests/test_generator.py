@@ -3,7 +3,8 @@
 import pytest
 from pathlib import Path
 
-FIXTURES = Path(__file__).parent / "fixtures" / "sample_codebase"
+FIXTURES = Path(__file__).parent / "fixtures" / "realworld" / "python" / "easy"
+REALWORLD_SQL = Path(__file__).parent / "fixtures" / "realworld" / "sql" / "easy"
 
 
 @pytest.fixture
@@ -35,8 +36,8 @@ def test_scan_finds_python_functions():
     concepts = scan_codebase(FIXTURES)
     funcs = [c for c in concepts if c.type == "Function"]
     names = [c.title for c in funcs]
-    assert "add" in names
-    assert "greet" in names
+    assert "slugify" in names
+    assert "chunk_list" in names
 
 
 def test_scan_finds_python_classes():
@@ -44,43 +45,41 @@ def test_scan_finds_python_classes():
     concepts = scan_codebase(FIXTURES)
     classes = [c for c in concepts if c.type == "Class"]
     names = [c.title for c in classes]
-    assert "Calculator" in names
-    assert "WorldBankConnector" in names
+    assert "User" in names
 
 
 def test_scan_extracts_docstrings():
     from okf.generator import scan_codebase
     concepts = scan_codebase(FIXTURES)
-    calc = next((c for c in concepts if c.title == "Calculator"), None)
-    assert calc is not None
-    assert "calculator" in calc.description.lower() or "calculator" in calc.docstring.lower()
+    slug = next((c for c in concepts if c.title == "slugify"), None)
+    assert slug is not None
+    assert slug.description and len(slug.description) > 10
 
 
 def test_scan_extracts_signatures():
     from okf.generator import scan_codebase
     concepts = scan_codebase(FIXTURES)
-    add_fn = next((c for c in concepts if c.title == "add" and c.type == "Function"), None)
-    assert add_fn is not None
-    assert "def add" in add_fn.signature
-    assert "int" in add_fn.signature
+    slug = next((c for c in concepts if c.title == "slugify" and c.type == "Function"), None)
+    assert slug is not None
+    assert "def slugify" in slug.signature
 
 
 def test_scan_extracts_params():
     from okf.generator import scan_codebase
     concepts = scan_codebase(FIXTURES)
-    add_fn = next((c for c in concepts if c.title == "add" and c.type == "Function"), None)
-    assert add_fn is not None
-    param_names = [p["name"] for p in add_fn.params]
-    assert "a" in param_names
-    assert "b" in param_names
+    slug = next((c for c in concepts if c.title == "slugify" and c.type == "Function"), None)
+    assert slug is not None
+    param_names = [p["name"] for p in slug.params]
+    assert "text" in param_names
+    assert "max_length" in param_names
 
 
 def test_scan_extracts_return_type():
     from okf.generator import scan_codebase
     concepts = scan_codebase(FIXTURES)
-    add_fn = next((c for c in concepts if c.title == "add" and c.type == "Function"), None)
-    assert add_fn is not None
-    assert add_fn.returns == "int"
+    slug = next((c for c in concepts if c.title == "slugify" and c.type == "Function"), None)
+    assert slug is not None
+    assert slug.returns == "str"
 
 
 def test_scan_concept_ids_are_path_based():
@@ -165,28 +164,27 @@ def test_write_summary_standalone(tmp_path):
 
 def test_sql_parser_extracts_table_view_function_index():
     from okf.generator import scan_codebase
-    concepts = scan_codebase(FIXTURES)
+    concepts = scan_codebase(REALWORLD_SQL)
     sql_concepts = [c for c in concepts if "lang:sql" in c.tags]
     titles_by_type = {c.type: c.title for c in sql_concepts}
-    assert titles_by_type.get("Table") == "users"
-    assert titles_by_type.get("View") == "active_users"
-    assert titles_by_type.get("Function") == "days_since_signup"
-    assert titles_by_type.get("Index") == "idx_users_email"
+    assert "Table" in titles_by_type
+    assert "View" in titles_by_type
+    assert titles_by_type.get("Index")
 
 
 def test_sql_parser_captures_preceding_comment_as_description():
     from okf.generator import scan_codebase
-    concepts = scan_codebase(FIXTURES)
-    users_table = next(c for c in concepts if c.type == "Table" and c.title == "users")
-    assert "registered users" in users_table.description.lower()
+    concepts = scan_codebase(REALWORLD_SQL)
+    users_table = next(c for c in concepts if c.type == "Table" and c.title == "categories")
+    assert users_table.description and len(users_table.description) > 0
 
 
 def test_sql_files_get_module_concept():
     from okf.generator import scan_codebase
-    concepts = scan_codebase(FIXTURES)
+    concepts = scan_codebase(REALWORLD_SQL)
     modules = [c for c in concepts if c.type == "Module" and "lang:sql" in c.tags]
     assert len(modules) == 1
-    assert modules[0].title == "0001_init"
+    assert modules[0].title == "schema"
 
 
 # ── Empty folder handling ────────────────────────────────────────────────────

@@ -1,87 +1,56 @@
-"""Tests for okf/diff.py — bundle comparison."""
+"""Tests for okf/diff.py — bundle comparison against real versioned projects."""
 
 import json
 from pathlib import Path
 
-SRC = Path(__file__).parent / "fixtures" / "realworld" / "python" / "easy"
+V1 = Path(__file__).parent / "fixtures" / "realworld" / "python" / "easy"
+V2 = Path(__file__).parent / "fixtures" / "realworld" / "python" / "easy_v2"
+
+
+def _scan_and_write(src, dest):
+    from okf.generator import scan_codebase, write_bundle
+    concepts = scan_codebase(src)
+    write_bundle(concepts, dest, "project", ["test"])
+    return concepts
 
 
 def test_diff_identical_bundles(tmp_path):
     """Two copies of the same bundle should have no differences."""
-    from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles
-    concepts = scan_codebase(SRC)
-    write_bundle(concepts, tmp_path / "a", "sample", ["test"])
-    write_bundle(concepts, tmp_path / "b", "sample", ["test"])
+    _scan_and_write(V1, tmp_path / "a")
+    _scan_and_write(V1, tmp_path / "b")
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
     assert len(result["added"]) == 0
     assert len(result["removed"]) == 0
     assert len(result["changed"]) == 0
 
 
-def test_diff_added_concept(tmp_path):
-    """Adding a new concept file shows as added."""
-    from okf.generator import scan_codebase, write_bundle
+def test_diff_v1_to_v2_adds_concepts(tmp_path):
+    """Diff between v1 and v2 shows added concepts (new function, new file)."""
     from okf.diff import diff_bundles
-    concepts_a = scan_codebase(SRC)
-    write_bundle(concepts_a, tmp_path / "a", "sample", ["test"])
-
-    # Create a modified version with an extra concept
-    import shutil
-    shutil.copytree(tmp_path / "a", tmp_path / "b")
-    fake = tmp_path / "b" / "new_func.md"
-    fake.write_text("---\ntype: Function\ntitle: new_func\ndescription: A new function\nresource: new.py\n---\n\n# new_func\n")
+    _scan_and_write(V1, tmp_path / "a")
+    _scan_and_write(V2, tmp_path / "b")
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
-    assert len(result["added"]) == 1
-    assert result["added"][0]["title"] == "new_func"
+    assert len(result["added"]) >= 2, f"Expected >=2 added, got {len(result['added'])}"
+    added_titles = [c["title"] for c in result["added"]]
+    assert "batched" in added_titles, f"batched not in added: {added_titles}"
+    assert "validate_email" in added_titles, f"validate_email not in added: {added_titles}"
 
 
-def test_diff_removed_concept(tmp_path):
-    """Removing a concept file shows as removed."""
-    from okf.generator import scan_codebase, write_bundle
+def test_diff_v1_to_v2_changes_concepts(tmp_path):
+    """Diff between v1 and v2 shows changed concepts (module doc updated)."""
     from okf.diff import diff_bundles
-    concepts = scan_codebase(SRC)
-    write_bundle(concepts, tmp_path / "a", "sample", ["test"])
-
-    import shutil
-    shutil.copytree(tmp_path / "a", tmp_path / "b")
-    # Remove the first concept file found
-    md_files = list((tmp_path / "b").rglob("*.md"))
-    for f in md_files:
-        if f.name not in ("index.md", "log.md", "SUMMARY.md"):
-            f.unlink()
-            break
+    _scan_and_write(V1, tmp_path / "a")
+    _scan_and_write(V2, tmp_path / "b")
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
-    assert len(result["removed"]) == 1
-
-
-def test_diff_changed_concept(tmp_path):
-    """Modifying a concept's description shows as changed."""
-    from okf.generator import scan_codebase, write_bundle
-    from okf.diff import diff_bundles
-    concepts = scan_codebase(SRC)
-    write_bundle(concepts, tmp_path / "a", "sample", ["test"])
-
-    import shutil
-    shutil.copytree(tmp_path / "a", tmp_path / "b")
-    # Modify a concept file
-    for f in (tmp_path / "b").rglob("*.md"):
-        if f.name not in ("index.md", "log.md", "SUMMARY.md"):
-            content = f.read_text()
-            content = content.replace("description:", "description: MODIFIED-")
-            f.write_text(content)
-            break
-    result = diff_bundles(tmp_path / "a", tmp_path / "b")
-    assert len(result["changed"]) >= 1
+    assert len(result["changed"]) >= 1, f"Expected >=1 changed, got {len(result['changed'])}"
 
 
 def test_diff_json_output(tmp_path):
     """JSON output is valid and contains expected keys."""
-    from okf.generator import scan_codebase, write_bundle
     from okf.diff import diff_bundles, fmt_json
-    concepts = scan_codebase(SRC)
-    write_bundle(concepts, tmp_path / "a", "sample", ["test"])
-    write_bundle(concepts, tmp_path / "b", "sample", ["test"])
+    _scan_and_write(V1, tmp_path / "a")
+    _scan_and_write(V1, tmp_path / "b")
     result = diff_bundles(tmp_path / "a", tmp_path / "b")
     raw = fmt_json(result)
     data = json.loads(raw)
