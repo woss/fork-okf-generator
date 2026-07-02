@@ -1,0 +1,244 @@
+"""okf mcp — Model Context Protocol server for OKF bundles.
+
+Lets any MCP-compatible agent (Claude Desktop, Cursor, etc.)
+browse and search bundle concepts natively over stdio.
+
+Usage:
+  okf mcp <bundle_dir>              Start MCP server (stdio mode)
+  okf mcp <bundle_dir> --port 9000  Start MCP server (HTTP+SSE mode)
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+def jsonrpc(id: int | str, result: Any = None, error: dict | None = None) -> str:
+    msg = {"jsonrpc": "2.0", "id": id}
+    if error:
+        msg["error"] = error
+    else:
+        msg["result"] = result
+    return json.dumps(msg, ensure_ascii=False)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MCP Server — stdio mode
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class BundleMCPServer:
+    """Minimal MCP server that exposes an OKF bundle as resources + tools."""
+
+    def __init__(self, bundle_dir: Path):
+        from okf.lookup import load_bundle
+        self.bundle_dir = bundle_dir
+        self.concepts = load_bundle(bundle_dir)
+        self.req_id = 0
+
+    # ── Resource handlers ───────────────────────────────────────────────
+
+    def list_resources(self) -> list[dict]:
+        resources = []
+        for c in self.concepts:
+            uri = f"okf://{c['concept_id']}"
+            resources.append({
+                "uri": uri,
+                "name": c["title"],
+                "description": c.get("description", "")[:120],
+                "mimeType": "text/markdown",
+            })
+        return resources
+
+    def read_resource(self, uri: str) -> str:
+        cid = uri.replace("okf://", "", 1)
+        for c in self.concepts:
+            if c["concept_id"] == cid:
+                return c.get("raw", f"# {c['title']}\n\n{c.get('description', '')}")
+        return ""
+
+    # ── Tool handlers ───────────────────────────────────────────────────
+
+    def list_tools(self) -> list[dict]:
+        return [
+            {
+                "name": "lookup",
+                "description": "Search concepts by name, type, or tag",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Search query"},
+                        "type": {"type": "string", "description": "Filter by type (Class, Function, Module, Dependency)", "enum": ["", "Class", "Function", "Module", "Dependency"]},
+                        "tag": {"type": "string", "description": "Filter by tag (e.g. lang:python, ecosystem:pip)"},
+                        "limit": {"type": "integer", "description": "Max results", "default": 10},
+                    },
+                    "required": ["query"],
+                },
+            },
+            {
+                "name": "list_dependencies",
+                "description": "List all dependency concepts, optionally filtered by ecosystem",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "ecosystem": {"type": "string", "description": "Filter by ecosystem (pip, npm, cargo, go, etc.)"},
+                    },
+                },
+            },
+            {
+                "name": "bundle_info",
+                "description": "Get bundle statistics (total concepts, types, languages)",
+                "inputSchema": {"type": "object", "properties": {}},
+            },
+            {
+                "name": "list_by_type",
+                "description": "List all concepts of a specific type",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "type": {"type": "string", "description": "Concept type", "enum": ["Class", "Function", "Module", "Dependency"]},
+                    },
+                    "required": ["type"],
+                },
+            },
+        ]
+
+    def handle_tool_call(self, name: str, args: dict) -> Any:
+        if name == "lookup":
+            from okf.lookup import search
+            tokens = args.get("query", "").split()
+            type_filter = args.get("type", "")
+            tag_filters = [args["tag"]] if args.get("tag") else []
+            results = search(self.concepts, tokens=tokens, type_filter=type_filter, tag_filters=tag_filters, limit=args.get("limit", 10))
+            return [{"title": c["title"], "type": c["type"], "description": c.get("description", ""), "resource": c.get("resource", "")} for c in results]
+
+        if name == "list_dependencies":
+            deps = [c for c in self.concepts if c["type"] == "Dependency"]
+            eco = args.get("ecosystem", "")
+            if eco:
+                deps = [c for c in deps if any(eco in t for t in c.get("tags", []))]
+            return [{"title": c["title"], "resource": c.get("resource", ""), "description": c.get("description", "")} for c in deps]
+
+        if name == "bundle_info":
+            types: dict[str, int] = {}
+            langs: dict[str, int] = {}
+            for c in self.concepts:
+                types[c["type"]] = types.get(c["type"], 0) + 1
+                for t in c.get("tags", []):
+                    if t.startswith("lang:"):
+                        lang = t[5:]
+                        langs[lang] = langs.get(lang, 0) + 1
+            return {"name": self.bundle_dir.name, "total": len(self.concepts), "types": types, "languages": langs}
+
+        if name == "list_by_type":
+            ctype = args.get("type", "")
+            return [{"title": c["title"], "resource": c.get("resource", ""), "description": c.get("description", "")} for c in self.concepts if c["type"] == ctype]
+
+        return {"error": f"Unknown tool: {name}"}
+
+    # ── JSON-RPC dispatch ────────────────────────────────────────────────
+
+    def handle_request(self, raw: str) -> str | None:
+        try:
+            msg = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+
+        rid = msg.get("id", 0)
+        method = msg.get("method", "")
+        params = msg.get("params", {}) or {}
+
+        if method == "initialize":
+            return jsonrpc(rid, {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "resources": {"listChanged": False},
+                    "tools": {"listChanged": False},
+                },
+                "serverInfo": {"name": "okf-mcp", "version": "0.1"},
+            })
+
+        if method == "notifications/initialized":
+            return None
+
+        if method == "resources/list":
+            return jsonrpc(rid, self.list_resources())
+
+        if method == "resources/read":
+            uri = params.get("uri", "")
+            content = self.read_resource(uri)
+            return jsonrpc(rid, [{"uri": uri, "mimeType": "text/markdown", "text": content}])
+
+        if method == "tools/list":
+            return jsonrpc(rid, self.list_tools())
+
+        if method == "tools/call":
+            result = self.handle_tool_call(params.get("name", ""), params.get("arguments", {}))
+            return jsonrpc(rid, {"content": [{"type": "text", "text": json.dumps(result, indent=2, ensure_ascii=False)}]})
+
+        return jsonrpc(rid, None, {"code": -32601, "message": f"Method not found: {method}"})
+
+    def run_stdio(self):
+        """Read JSON-RPC requests from stdin, write responses to stdout."""
+        for line in sys.stdin:
+            line = line.strip()
+            if not line:
+                continue
+            resp = self.handle_request(line)
+            if resp:
+                sys.stdout.write(resp + "\n")
+                sys.stdout.flush()
+
+    def run_http(self, port: int):
+        """Simple HTTP+SSE server for MCP over HTTP."""
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+
+        class MCPHTTPHandler(BaseHTTPRequestHandler):
+            server_ref = None
+
+            def do_POST(self):
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length).decode()
+                resp = self.server_ref.handle_request(body) if self.server_ref else None
+                if resp:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(resp.encode())
+                else:
+                    self.send_response(202)
+                    self.end_headers()
+
+            def log_message(self, format, *args):
+                pass
+
+        MCPHTTPHandler.server_ref = self
+        server = HTTPServer(("127.0.0.1", port), MCPHTTPHandler)
+        print(f"MCP server listening on http://127.0.0.1:{port}/mcp", flush=True)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print("\nStopped.")
+            sys.exit(0)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="MCP server for OKF bundles.")
+    parser.add_argument("bundle_dir", help="Path to OKF bundle directory")
+    parser.add_argument("--port", "-p", type=int, default=0, help="HTTP port (omit for stdio mode)")
+    args = parser.parse_args()
+
+    bundle_dir = Path(args.bundle_dir).resolve()
+    if not bundle_dir.exists():
+        print(f"ERROR: Bundle not found: {bundle_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    server = BundleMCPServer(bundle_dir)
+    print(f"MCP server ready — {len(server.concepts)} concepts from {bundle_dir.name}", file=sys.stderr)
+
+    if args.port:
+        server.run_http(args.port)
+    else:
+        server.run_stdio()

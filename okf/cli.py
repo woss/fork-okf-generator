@@ -10,6 +10,7 @@ Commands:
   okf init                                   Interactive bundle setup wizard
   okf visualize  <bundle> [output.html]       Generate interactive HTML graph of a bundle
   okf serve      [dir] [--port] [--open]     Serve bundle + auto-open viz
+  okf mcp        <bundle> [--port]            MCP server for AI agents (Claude, Cursor, etc.)
 
 Run `okf <command> --help` for per-command options.
 """
@@ -262,6 +263,10 @@ def main():
 
     elif cmd == "serve":
         from okf.serve import main as _main
+        _main()
+
+    elif cmd == "mcp":
+        from okf.mcp_server import main as _main
         _main()
 
     else:
