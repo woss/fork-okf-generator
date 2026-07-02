@@ -19,7 +19,7 @@ repos:
       - id: bumblebee-scan
         name: Bumblebee supply-chain scan
         description: Scans dependencies for known supply-chain compromises
-        entry: bumblebee scan --profile baseline --findings-only --max-duration 1m
+        entry: bumblebee scan --profile baseline --max-duration 1m
         language: system
         pass_filenames: false
         always_run: true
