@@ -341,6 +341,13 @@ class PythonParser:
                 c = self._parse_class(node, rel, ts, module_concept.concept_id)
                 classes.append(c)
                 module_concept.related.append(c.concept_id)
+                # Emit methods as individual Function concepts
+                for child in ast.iter_child_nodes(node):
+                    if isinstance(child, ast.FunctionDef | ast.AsyncFunctionDef):
+                        mc = self._parse_function(child, rel, ts, c.concept_id)
+                        mc.decorators = self._py_decorators(child)
+                        funcs.append(mc)
+                        c.related.append(mc.concept_id)
 
         return [module_concept] + funcs + classes
 
@@ -565,6 +572,31 @@ class JSTSParser(TreeSitterParser):
                     type_params=tp)
                 cc.inheritance = bases
                 concepts.append(cc)
+
+            elif node.type == "method_definition":
+                # Emit class methods as individual Function concepts
+                mname_node = node.child_by_field_name("name")
+                if not mname_node:
+                    continue
+                mname  = _node_text(mname_node)
+                mdoc   = _prev_comment(node, src_bytes)
+                mparams = self._js_params(node)
+                mret   = self._js_return_type(node)
+                mtp    = self._js_type_params(node)
+                msig   = f"{mname}({mparams})" + (f": {mret}" if mret else "")
+                # Link to the nearest enclosing class as parent
+                mparent_id = parent_id
+                p = node.parent
+                while p is not None:
+                    if p.type == "class_declaration":
+                        pname = _node_text(p.child_by_field_name("name"))
+                        mparent_id = f"{resource.replace(os.sep, '/')}/{_safe_id(pname)}" if pname else parent_id
+                        break
+                    p = p.parent
+                mc = self._make_concept(
+                    "Function", mname, mdoc, msig, resource, ts, mparent_id,
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes, type_params=mtp)
+                concepts.append(mc)
 
             elif node.type == "lexical_declaration":
                 # const/let foo = (...) => ...  or  const foo = function(...) {}
@@ -1184,9 +1216,6 @@ class CppParser(TreeSitterParser):
                 decl = node.child_by_field_name("declarator") or node.child_by_field_name("function_declarator")
                 if decl:
                     name = _node_text(decl.child_by_field_name("declarator") or decl.child_by_field_name("field_identifier") or decl)
-                # skip methods that are inside a class_specifier (handled by class)
-                if name and node.parent and node.parent.type in ("field_declaration_list", "class_specifier"):
-                    continue
             elif node.type in ("class_specifier", "struct_specifier"):
                 if node.parent and node.parent.type in ("template_declaration",):
                     name = _node_text(node.child_by_field_name("name"))
@@ -1207,7 +1236,18 @@ class CppParser(TreeSitterParser):
                 ret   = _node_text(node.child_by_field_name("type"))
                 tp    = self._cpp_template_params(node)
                 sig   = f"{ret + ' ' if ret else ''}{name}({params})"
-                concepts.append(self._make_concept("Function", name, doc, sig, resource, ts, parent_id, node.start_point[0]+1, node=node, src_bytes=src_bytes, type_params=tp))
+                # Determine parent: if inside a class, link to class instead of module
+                f_parent_id = parent_id
+                pn = node.parent
+                while pn is not None:
+                    if pn.type in ("class_specifier", "struct_specifier"):
+                        pname = _node_text(pn.child_by_field_name("name"))
+                        if pname:
+                            res_id = resource.replace(os.sep, "/")
+                            f_parent_id = f"{res_id}/{_safe_id(pname)}"
+                        break
+                    pn = pn.parent
+                concepts.append(self._make_concept("Function", name, doc, sig, resource, ts, f_parent_id, node.start_point[0]+1, node=node, src_bytes=src_bytes, type_params=tp))
             elif node.type in ("class_specifier", "struct_specifier"):
                 name = _node_text(node.child_by_field_name("name"))
                 if not name:

@@ -890,3 +890,81 @@ def test_rust_attributes():
     assert fn_run is not None
     assert any("tokio" in d for d in fn_run.decorators), f"#[tokio::main] missing: {fn_run.decorators}"
     import shutil; shutil.rmtree(tmp)
+
+
+# ── Method emission as individual concepts (Tier 1) ──────────────────────
+
+def test_python_methods_emitted():
+    """Python class methods are emitted as individual Function concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "service.py").write_text(
+        "class Service:\n"
+        "    def start(self): pass\n"
+        "    async def stop(self): pass\n"
+    )
+    concepts = scan_codebase(tmp)
+    methods = {c.title for c in concepts if c.type == "Function"}
+    assert "start" in methods, f"method 'start' not emitted: {methods}"
+    assert "stop" in methods, f"method 'stop' not emitted: {methods}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_typescript_methods_emitted():
+    """TypeScript class methods are emitted as individual Function concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "service.ts").write_text(
+        "class Service {\n"
+        "    start(): void {}\n"
+        "    stop(): void {}\n"
+        "}\n"
+    )
+    concepts = scan_codebase(tmp)
+    methods = {c.title for c in concepts if c.type == "Function"}
+    assert "start" in methods, f"method 'start' not emitted: {methods}"
+    assert "stop" in methods, f"method 'stop' not emitted: {methods}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_cpp_methods_emitted():
+    """C++ class methods are emitted as individual Function concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.cpp").write_text(
+        "class Counter {\n"
+        "public:\n"
+        "    int get() const { return val; }\n"
+        "    void inc() { val++; }\n"
+        "private:\n"
+        "    int val = 0;\n"
+        "};\n"
+    )
+    concepts = scan_codebase(tmp)
+    methods = {c.title for c in concepts if c.type == "Function"}
+    assert "get" in methods, f"method 'get' not emitted: {methods}"
+    assert "inc" in methods, f"method 'inc' not emitted: {methods}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_ruby_methods_emitted():
+    """Ruby class methods are emitted as individual Function concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.rb").write_text(
+        "class Service\n"
+        "  def start\n"
+        "  end\n"
+        "  def stop\n"
+        "  end\n"
+        "end\n"
+    )
+    concepts = scan_codebase(tmp)
+    methods = {c.title for c in concepts if c.type == "Function"}
+    assert "start" in methods, f"method 'start' not emitted: {methods}"
+    assert "stop" in methods, f"method 'stop' not emitted: {methods}"
+    import shutil; shutil.rmtree(tmp)
