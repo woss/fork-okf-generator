@@ -174,19 +174,26 @@ def _install_main():
         _install_agent(agent)
 
 
-BANNER = """
-╔══════════════════════════════════════╗
-║    ██████╗ ██╗  ██╗███████╗         ║
-║   ██╔═══██╗██║ ██╔╝██╔════╝         ║
-║   ██║   ██║█████╔╝ █████╗           ║
-║   ██║   ██║██╔═██╗ ██╔══╝           ║
-║   ╚██████╔╝██║  ██╗██║              ║
-║    ╚═════╝ ╚═╝  ╚═╝╚═╝              ║
-║                                      ║
-║   Open Knowledge Format Generator    ║
-║   Index any codebase for AI agents   ║
-╚══════════════════════════════════════╝
-"""
+BANNER = r"""╭───────────────────────────────────────────────────╮
+│                                                   │
+│     ○────╮   ██████╗ ██╗  ██╗███████╗   ╭────○    │
+│     │    ╰──██╔═══██╗██║ ██╔╝██╔════╝───╯    │    │
+│   ──○       ██║   ██║█████╔╝ █████╗          ○──  │
+│     │    ╭──██║   ██║██╔═██╗ ██╔══╝───╮      │    │
+│     ○────╯  ╚██████╔╝██║  ██╗██║      ╰──────○    │
+│              ╚═════╝ ╚═╝  ╚═╝╚═╝                  │
+│                                                   │
+│ ❖ Open Knowledge Format Generator                 │
+│ ❖ Index any codebase for AI agents                │
+╰───────────────────────────────────────────────────╯"""
+
+PURPLE = "\033[35m"
+RESET = "\033[0m"
+
+
+def print_banner():
+    for line in BANNER.splitlines():
+        print(f"{PURPLE}{line}{RESET}")
 
 
 def main():
@@ -196,7 +203,7 @@ def main():
         sys.exit(0)
 
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
-        print(BANNER.strip())
+        print_banner()
 
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
         print(__doc__)
