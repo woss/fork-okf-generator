@@ -53,6 +53,9 @@ MANIFEST_HANDLERS: dict[str, str] = {
     "Package.swift": "parse_package_swift",
     "project.clj": "parse_project_clj",
     "mix.exs": "parse_mix_exs",
+    "Dockerfile": "parse_dockerfile",
+    "docker-compose.yml": "parse_docker_compose",
+    "docker-compose.yaml": "parse_docker_compose",
 }
 
 
@@ -573,4 +576,113 @@ def parse_mix_exs(path: Path) -> list[dict[str, Any]]:
         opts = opts or ""
         dev = bool(re.search(r":(dev|test)", opts))
         deps.append({"name": name, "ecosystem": "hex", "version": version, "dev": dev})
+    return deps
+
+
+# ---------------------------------------------------------------------------
+# Dockerfile
+# ---------------------------------------------------------------------------
+
+def parse_dockerfile(path: Path) -> list[dict[str, Any]]:
+    """Dockerfile. Extracts base images (FROM) and pip packages (RUN pip install).
+    
+    Detects:
+      - FROM <image>[:<tag>] [AS <name>]     → docker base image dependency
+      - RUN pip install <package>[==<version>] → pip dependency
+    """
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    deps = []
+
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+
+        # FROM python:3.12-slim AS base
+        m = re.match(r"FROM\s+([a-zA-Z0-9_./-]+)(?::([a-zA-Z0-9_.-]+))?(?:\s+AS\s+\S+)?", s, re.IGNORECASE)
+        if m:
+            image = m.group(1)
+            tag = m.group(2) or ""
+            version = tag if tag else "latest"
+            deps.append({"name": image, "ecosystem": "docker", "version": version, "dev": False})
+            continue
+
+        # RUN pip install requests==2.31.0 flask
+        m = re.match(r"RUN\s+pip\s+install\s+(.+)", s, re.IGNORECASE)
+        if m:
+            pkgs = m.group(1)
+            # Strip options like --no-cache-dir, -r requirements.txt
+            pkgs = re.sub(r"\s+-[^\s]+", "", pkgs)
+            for pkg in pkgs.split():
+                pkg = pkg.strip()
+                if not pkg:
+                    continue
+                if "==" in pkg:
+                    parts = pkg.split("==", 1)
+                    name = parts[0]
+                    version = "==" + parts[1]
+                elif ">=" in pkg:
+                    parts = pkg.split(">=", 1)
+                    name = parts[0]
+                    version = ">=" + parts[1]
+                elif "=" in pkg:
+                    parts = pkg.split("=", 1)
+                    name = parts[0]
+                    version = "=" + parts[1]
+                else:
+                    name = pkg
+                    version = ""
+                deps.append({"name": name, "ecosystem": "pip", "version": version, "dev": False})
+
+    return deps
+
+
+# ---------------------------------------------------------------------------
+# docker-compose.yml / .yaml
+# ---------------------------------------------------------------------------
+
+def parse_docker_compose(path: Path) -> list[dict[str, Any]]:
+    """docker-compose.yml. Extracts service images and depends_on relations.
+    
+    Detects:
+      - image: <image>[:<tag>]         → docker base image dependency
+      - depends_on: [<service>, ...]   → docker service dependency
+    """
+    try:
+        import yaml
+        data = yaml.safe_load(path.read_text(encoding="utf-8", errors="ignore"))
+    except Exception:
+        return []
+
+    if not isinstance(data, dict):
+        return []
+
+    deps = []
+    services = data.get("services", {})
+    if not isinstance(services, dict):
+        return deps
+
+    for svc_name, svc_config in services.items():
+        if not isinstance(svc_config, dict):
+            continue
+
+        # image: postgres:15
+        image = svc_config.get("image", "")
+        if image and isinstance(image, str):
+            tag = ""
+            if ":" in image:
+                image, tag = image.split(":", 1)
+            version = tag if tag else "latest"
+            deps.append({"name": image, "ecosystem": "docker", "version": version, "dev": False})
+
+        # depends_on: [db, redis]
+        depends = svc_config.get("depends_on", [])
+        if isinstance(depends, list):
+            for dep_name in depends:
+                if isinstance(dep_name, str):
+                    deps.append({"name": f"{svc_name}→{dep_name}", "ecosystem": "docker-compose", "version": "", "dev": False})
+        elif isinstance(depends, dict):
+            for dep_name in depends:
+                deps.append({"name": f"{svc_name}→{dep_name}", "ecosystem": "docker-compose", "version": "", "dev": False})
+
     return deps

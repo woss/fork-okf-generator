@@ -295,7 +295,7 @@ def test_complex_all_manifest_ecosystems():
         for t in c.tags:
             if t.startswith("ecosystem:"):
                 ecosystems.add(t[10:])
-    expected = {"pip", "npm", "cargo", "go", "composer", "maven", "rubygems", "gradle", "swiftpm", "clojars", "hex"}
+    expected = {"pip", "npm", "cargo", "go", "composer", "maven", "rubygems", "gradle", "swiftpm", "clojars", "hex", "docker"}
     assert expected.issubset(ecosystems), f"Missing ecosystems: {expected - ecosystems}"
 
 

@@ -38,6 +38,8 @@
 | `Package.swift` | regex | SwiftPM packages from `.package(url:from:)` |
 | `project.clj` | regex | Clojars deps + `:dev` profile |
 | `mix.exs` | regex | Hex packages + `only: :dev/:test` => dev |
+| `Dockerfile` | regex | Base images from `FROM`, pip packages from `RUN pip install` |
+| `docker-compose.yml` | `yaml` | Service images from `image:`, inter-service links from `depends_on:` |
 
 ## Architectural Query Examples
 

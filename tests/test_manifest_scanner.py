@@ -334,6 +334,84 @@ def test_parse_pnpm_lock(tmp_path):
     assert {"name": "lodash", "ecosystem": "npm", "version": "4.17.21", "dev": True} in deps
 
 
+# ── Dockerfile ──────────────────────────────────────────────────────────────
+
+def test_parse_dockerfile_from_image(tmp_path):
+    from okf.manifest_scanner import parse_dockerfile
+    f = _write(tmp_path, "Dockerfile", "FROM python:3.12-slim AS base\nRUN pip install requests")
+    deps = parse_dockerfile(f)
+    images = [d for d in deps if d["ecosystem"] == "docker"]
+    pip_pkgs = [d for d in deps if d["ecosystem"] == "pip"]
+    assert len(images) == 1
+    assert images[0] == {"name": "python", "ecosystem": "docker", "version": "3.12-slim", "dev": False}
+    assert len(pip_pkgs) == 1
+    assert pip_pkgs[0]["name"] == "requests"
+
+
+def test_parse_dockerfile_pip_with_versions(tmp_path):
+    from okf.manifest_scanner import parse_dockerfile
+    f = _write(tmp_path, "Dockerfile", "FROM ubuntu:22.04\nRUN pip install fastapi==0.109.0 uvicorn>=0.27")
+    deps = parse_dockerfile(f)
+    assert len(deps) == 3
+    assert {"name": "ubuntu", "ecosystem": "docker", "version": "22.04", "dev": False} in deps
+    assert {"name": "fastapi", "ecosystem": "pip", "version": "==0.109.0", "dev": False} in deps
+    assert {"name": "uvicorn", "ecosystem": "pip", "version": ">=0.27", "dev": False} in deps
+
+
+def test_parse_dockerfile_no_tag_defaults_to_latest(tmp_path):
+    from okf.manifest_scanner import parse_dockerfile
+    f = _write(tmp_path, "Dockerfile", "FROM alpine\nRUN echo hello")
+    deps = parse_dockerfile(f)
+    assert len(deps) == 1
+    assert deps[0] == {"name": "alpine", "ecosystem": "docker", "version": "latest", "dev": False}
+
+
+def test_parse_dockerfile_multistage(tmp_path):
+    from okf.manifest_scanner import parse_dockerfile
+    f = _write(tmp_path, "Dockerfile", "FROM node:20 AS builder\nFROM python:3.12-slim")
+    deps = parse_dockerfile(f)
+    assert len(deps) == 2
+    assert deps[0]["name"] == "node"
+    assert deps[1]["name"] == "python"
+
+
+# ── docker-compose.yml ──────────────────────────────────────────────────────
+
+def test_parse_docker_compose_images(tmp_path):
+    from okf.manifest_scanner import parse_docker_compose
+    f = _write(tmp_path, "docker-compose.yml", """
+services:
+  api:
+    image: myapp/api:latest
+  db:
+    image: postgres:15-alpine
+""")
+    deps = parse_docker_compose(f)
+    images = [d for d in deps if d["ecosystem"] == "docker"]
+    assert len(images) == 2
+    assert {"name": "postgres", "ecosystem": "docker", "version": "15-alpine", "dev": False} in images
+    assert {"name": "myapp/api", "ecosystem": "docker", "version": "latest", "dev": False} in images
+
+
+def test_parse_docker_compose_depends_on(tmp_path):
+    from okf.manifest_scanner import parse_docker_compose
+    f = _write(tmp_path, "docker-compose.yml", """
+services:
+  api:
+    image: api:latest
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgres:15
+""")
+    deps = parse_docker_compose(f)
+    dep_links = [d for d in deps if d["ecosystem"] == "docker-compose"]
+    assert len(dep_links) == 2
+    assert {"name": "api→db", "ecosystem": "docker-compose", "version": "", "dev": False} in dep_links
+    assert {"name": "api→redis", "ecosystem": "docker-compose", "version": "", "dev": False} in dep_links
+
+
 def test_manifest_deps_concept_id_is_ecosystem_colon_name(tmp_path):
     from okf.generator import scan_codebase
     src = tmp_path / "project"
