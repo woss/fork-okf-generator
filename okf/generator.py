@@ -170,6 +170,53 @@ def _node_text(node) -> str:
     return node.text.decode(errors="replace").strip()
 
 
+def _parse_doc_tags(docstring: str, lang: str) -> tuple[list[dict], str]:
+    """Parse structured doc tags (@param, @return, @type) from docstring.
+
+    Returns (params, returns) suitable for Concept.params / Concept.returns.
+    """
+    if not docstring:
+        return [], ""
+    params = []
+    returns = ""
+    for line in docstring.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if lang in ("java",):
+            m = re.match(r'@param\s+(\S+)(?:\s+(.*))?', s)
+            if m:
+                params.append({"name": m.group(1), "annotation": "", "default": ""})
+                continue
+            m = re.match(r'@return\s+(.*)', s)
+            if m:
+                returns = m.group(1)
+                continue
+        elif lang in ("javascript", "typescript"):
+            m = re.match(r'@param\s+\{([^}]*)\}\s+(\S+)', s)
+            if m:
+                params.append({"name": m.group(2), "annotation": m.group(1), "default": ""})
+                continue
+            m = re.match(r'@param\s+(\S+)', s)
+            if m:
+                params.append({"name": m.group(1), "annotation": "", "default": ""})
+                continue
+            m = re.match(r'@returns?\s+\{([^}]*)\}', s)
+            if m:
+                returns = m.group(1)
+                continue
+        elif lang == "ruby":
+            m = re.match(r'@param\s+\[([^\]]*)\]\s+(\S+)', s)
+            if m:
+                params.append({"name": m.group(2), "annotation": m.group(1), "default": ""})
+                continue
+            m = re.match(r'@return\s+\[([^\]]*)\]', s)
+            if m:
+                returns = m.group(1)
+                continue
+    return params, returns
+
+
 class TreeSitterParser:
     """Base class for all tree-sitter language parsers."""
     LANGUAGE     = "unknown"
@@ -555,10 +602,16 @@ class JSTSParser(TreeSitterParser):
                 ret    = self._js_return_type(node)
                 tp     = self._js_type_params(node)
                 sig    = f"function {name}({params})" + (f": {ret}" if ret else "")
-                concepts.append(self._make_concept(
+                fc = self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
                     node.start_point[0]+1, node=node, src_bytes=src_bytes,
-                    type_params=tp))
+                    type_params=tp)
+                parsed_params, parsed_returns = _parse_doc_tags(doc, self.LANGUAGE)
+                if parsed_params:
+                    fc.params = parsed_params
+                if parsed_returns:
+                    fc.returns = parsed_returns
+                concepts.append(fc)
 
             elif node.type == "class_declaration":
                 name_node = node.child_by_field_name("name")
@@ -634,6 +687,11 @@ class JSTSParser(TreeSitterParser):
                     "Function", mname, mdoc, msig, resource, ts, mparent_id,
                     node.start_point[0]+1, node=node, src_bytes=src_bytes, type_params=mtp)
                 mc.visibility = mvis
+                parsed_params, parsed_returns = _parse_doc_tags(mdoc, self.LANGUAGE)
+                if parsed_params:
+                    mc.params = parsed_params
+                if parsed_returns:
+                    mc.returns = parsed_returns
                 concepts.append(mc)
 
             elif node.type == "interface_declaration":
@@ -776,13 +834,15 @@ class GoParser(TreeSitterParser):
     def _parse_symbols(self, root, src_bytes, resource, ts, parent_id):
         concepts = []
 
-        for node in _find_all(root, "function_declaration", "method_declaration", "type_declaration"):
+        for node in _find_all(root, "function_declaration", "method_declaration", "type_declaration",
+                               "const_declaration", "var_declaration"):
+
+            doc = _prev_comment(node, src_bytes)
 
             if node.type == "function_declaration":
                 name = _node_text(node.child_by_field_name("name"))
                 if not name:
                     continue
-                doc    = _prev_comment(node, src_bytes)
                 params = self._go_params(node)
                 ret    = self._go_return(node)
                 tp     = self._go_type_params(node)
@@ -798,7 +858,6 @@ class GoParser(TreeSitterParser):
                 recv_text = _node_text(recv) if recv else ""
                 if not name:
                     continue
-                doc    = _prev_comment(node, src_bytes)
                 params = self._go_params(node)
                 ret    = self._go_return(node)
                 tp     = self._go_type_params(node)
@@ -816,7 +875,6 @@ class GoParser(TreeSitterParser):
                     if not name_node:
                         continue
                     name    = _node_text(name_node)
-                    doc     = _prev_comment(node, src_bytes)
                     is_iface = type_node and type_node.type == "interface_type"
                     ctype   = "Interface" if is_iface else "Class"
                     tp      = self._go_type_params(spec)
@@ -830,6 +888,42 @@ class GoParser(TreeSitterParser):
                         ctype, name, doc, sig, resource, ts, parent_id,
                         node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes,
                         type_params=tp))
+
+            elif node.type == "const_declaration":
+                for spec in node.children:
+                    if spec.type != "const_spec":
+                        continue
+                    n = spec.child_by_field_name("name")
+                    if not n:
+                        continue
+                    cname = _node_text(n)
+                    cdoc = _prev_comment(spec, src_bytes) or doc
+                    t = spec.child_by_field_name("type")
+                    tstr = _node_text(t) if t else ""
+                    v = spec.child_by_field_name("value")
+                    vstr = _node_text(v) if v else ""
+                    sig = f"const {cname}" + (f" {tstr}" if tstr else "") + (f" = {vstr}" if vstr else "")
+                    concepts.append(self._make_concept(
+                        "Constant", cname, cdoc, sig, resource, ts, parent_id,
+                        spec.start_point[0]+1, node=spec, src_bytes=src_bytes))
+
+            elif node.type == "var_declaration":
+                for spec in node.children:
+                    if spec.type != "var_spec":
+                        continue
+                    n = spec.child_by_field_name("name")
+                    if not n:
+                        continue
+                    vname = _node_text(n)
+                    vdoc = _prev_comment(spec, src_bytes) or doc
+                    t = spec.child_by_field_name("type")
+                    tstr = _node_text(t) if t else ""
+                    v = spec.child_by_field_name("value")
+                    vstr = _node_text(v) if v else ""
+                    sig = f"var {vname}" + (f" {tstr}" if tstr else "") + (f" = {vstr}" if vstr else "")
+                    concepts.append(self._make_concept(
+                        "Variable", vname, vdoc, sig, resource, ts, parent_id,
+                        spec.start_point[0]+1, node=spec, src_bytes=src_bytes))
 
         return concepts
 
@@ -927,6 +1021,11 @@ class JavaParser(TreeSitterParser):
                         node=method, src_bytes=src_bytes, type_params=tp)
                     mc.decorators = mdec
                     mc.visibility = mvis
+                    parsed_params, parsed_returns = _parse_doc_tags(mdoc, "java")
+                    if parsed_params:
+                        mc.params = parsed_params
+                    if parsed_returns:
+                        mc.returns = parsed_returns
                     concepts.append(mc)
 
             # Extract fields
@@ -1196,7 +1295,7 @@ class RubyParser(TreeSitterParser):
     def _parse_symbols(self, root, src_bytes, resource, ts, parent_id):
         concepts = []
 
-        for node in _find_all(root, "method", "class", "module"):
+        for node in _find_all(root, "method", "singleton_method", "class", "module"):
             name_node = node.child_by_field_name("name")
             if not name_node:
                 continue
@@ -1206,14 +1305,34 @@ class RubyParser(TreeSitterParser):
             if node.type == "method":
                 params = self._ruby_params(node)
                 sig    = f"def {name}({params})"
-                concepts.append(self._make_concept(
+                mc = self._make_concept(
                     "Function", name, doc, sig, resource, ts, parent_id,
-                    node.start_point[0]+1, node=node, src_bytes=src_bytes))
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes)
+                parsed_params, parsed_returns = _parse_doc_tags(doc, "ruby")
+                if parsed_params:
+                    mc.params = parsed_params
+                if parsed_returns:
+                    mc.returns = parsed_returns
+                concepts.append(mc)
+
+            elif node.type == "singleton_method":
+                params = self._ruby_params(node)
+                sig    = f"def self.{name}({params})"
+                mc = self._make_concept(
+                    "Function", name, doc, sig, resource, ts, parent_id,
+                    node.start_point[0]+1, node=node, src_bytes=src_bytes)
+                mc.visibility = ["singleton"]
+                parsed_params, parsed_returns = _parse_doc_tags(doc, "ruby")
+                if parsed_params:
+                    mc.params = parsed_params
+                if parsed_returns:
+                    mc.returns = parsed_returns
+                concepts.append(mc)
 
             elif node.type in {"class", "module"}:
                 methods = [
                     _node_text(m.child_by_field_name("name"))
-                    for m in _find_all(node, "method")
+                    for m in _find_all(node, "method", "singleton_method")
                     if m.child_by_field_name("name")
                 ]
                 sig = f"class {name}" if node.type == "class" else f"module {name}"
@@ -1315,6 +1434,18 @@ class CppParser(TreeSitterParser):
                 return _prev_comment(child.next_sibling or child, src_bytes) or _node_text(child).lstrip("/ *").strip()
         return ""
 
+    def _cpp_template_prefix(self, node) -> str:
+        """Return 'template<...>' prefix if node is inside a template_declaration."""
+        parent = node.parent
+        while parent is not None:
+            if parent.type == "template_declaration":
+                tpl = parent.child_by_field_name("parameters")
+                if tpl:
+                    return f"template<{_node_text(tpl)}> "
+                return "template<> "
+            parent = parent.parent
+        return ""
+
     def _cpp_template_params(self, node):
         """Extract template params from node or its template_declaration parent."""
         # C++ wraps templated declarations in template_declaration nodes
@@ -1370,7 +1501,8 @@ class CppParser(TreeSitterParser):
                 params = _node_text(params_node).strip("()") if params_node else ""
                 ret   = _node_text(node.child_by_field_name("type"))
                 tp    = self._cpp_template_params(node)
-                sig   = f"{ret + ' ' if ret else ''}{name}({params})"
+                tpl_prefix = self._cpp_template_prefix(node)
+                sig   = f"{tpl_prefix}{ret + ' ' if ret else ''}{name}({params})"
                 # Extract modifiers (static, virtual, const, override, etc.)
                 cpp_vis = []
                 for child in node.children:
@@ -1409,7 +1541,8 @@ class CppParser(TreeSitterParser):
                     for m in _find_all(node, "function_definition")
                     if m.child_by_field_name("declarator") or m.child_by_field_name("function_declarator")
                 ]
-                cc = self._make_concept(ctype, name, doc, f"{node.type.replace('_specifier','')} {name}", resource, ts, parent_id, node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes, type_params=tp)
+                tpl_prefix = self._cpp_template_prefix(node)
+                cc = self._make_concept(ctype, name, doc, f"{tpl_prefix}{node.type.replace('_specifier','')} {name}", resource, ts, parent_id, node.start_point[0]+1, methods=methods, node=node, src_bytes=src_bytes, type_params=tp)
                 cc.inheritance = bases
                 concepts.append(cc)
         return concepts
@@ -2006,7 +2139,7 @@ def render_dir_index(
         def _plural(t: str) -> str:
             return "Dependencies" if t == "Dependency" else f"{t}s"
 
-        for ctype in ("Module", "Class", "Function", "Method", "Dependency"):
+        for ctype in ("Module", "Class", "Function", "Method", "Constant", "Variable", "Dependency"):
             group = by_type.get(ctype, [])
             if not group:
                 continue

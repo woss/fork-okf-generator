@@ -1278,3 +1278,242 @@ def test_ruby_methods_emitted():
     assert "start" in methods, f"method 'start' not emitted: {methods}"
     assert "stop" in methods, f"method 'stop' not emitted: {methods}"
     import shutil; shutil.rmtree(tmp)
+
+
+# ── Structured doc tag parsing: Javadoc @param / @return (Tier 3) ────────
+
+def test_java_doc_tags_populate_params_and_returns():
+    """Javadoc @param and @return tags populate structured params/returns."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "Test.java").write_text(
+        "public class Test {\n"
+        "    /**\n"
+        "     * Greets a user.\n"
+        "     * @param name the person to greet\n"
+        "     * @return a greeting string\n"
+        "     */\n"
+        "    public String greet(String name) { return \"Hi \" + name; }\n"
+        "}\n"
+    )
+    concepts = scan_codebase(tmp)
+    greet = next((c for c in concepts if c.type == "Function" and c.title == "greet"), None)
+    assert greet is not None, "greet() not found"
+    assert len(greet.params) >= 1, f"greet should have params from @param, got {greet.params}"
+    assert greet.params[0]["name"] == "name", f"param should be 'name', got {greet.params}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_jsdoc_params_with_types_populate_annotations():
+    """JSDoc @param {Type} tag populates param annotation."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "lib.js").write_text(
+        "/**\n"
+        " * Format a value.\n"
+        " * @param {number} val - the value to format\n"
+        " * @returns {string} formatted value\n"
+        " */\n"
+        "function format(val) { return String(val); }\n"
+    )
+    concepts = scan_codebase(tmp)
+    fmt = next((c for c in concepts if c.type == "Function" and c.title == "format"), None)
+    assert fmt is not None, "format() not found"
+    assert len(fmt.params) >= 1, f"format should have params from @param, got {fmt.params}"
+    assert fmt.params[0]["name"] == "val", f"param should be 'val', got {fmt.params}"
+    assert fmt.params[0]["annotation"] == "number", f"annotation should be 'number', got {fmt.params[0]}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_ts_method_doc_tags():
+    """TypeScript method JSDoc @param populates method concept params."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "service.ts").write_text(
+        "class Service {\n"
+        "  /**\n"
+        "   * Process data.\n"
+        "   * @param {string} input - the input data\n"
+        "   * @returns {boolean} success flag\n"
+        "   */\n"
+        "  process(input: string): boolean { return true; }\n"
+        "}\n"
+    )
+    concepts = scan_codebase(tmp)
+    proc = next((c for c in concepts if c.type == "Function" and c.title == "process"), None)
+    assert proc is not None, "process() not found"
+    assert len(proc.params) >= 1, f"process should have params from @param, got {proc.params}"
+    assert proc.params[0]["name"] == "input", f"param should be 'input', got {proc.params}"
+    assert proc.params[0]["annotation"] == "string", f"annotation should be 'string', got {proc.params[0]}"
+    import shutil; shutil.rmtree(tmp)
+
+
+# ── Go const / var declarations (Tier 3) ─────────────────────────────────
+
+def test_go_const_declaration():
+    """Go const declarations are extracted as Constant concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "main.go").write_text(
+        "package main\n"
+        "const MAX_SIZE = 1024\n"
+        "const AppName string = \"myapp\"\n"
+    )
+    concepts = scan_codebase(tmp)
+    consts = {c.title for c in concepts if c.type == "Constant"}
+    assert "MAX_SIZE" in consts, f"MAX_SIZE not in constants: {consts}"
+    assert "AppName" in consts, f"AppName not in constants: {consts}"
+    app = next((c for c in concepts if c.title == "AppName"), None)
+    assert app is not None
+    assert "string" in app.signature, f"AppName signature should mention string: {app.signature}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_go_var_declaration():
+    """Go var declarations are extracted as Variable concepts."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "main.go").write_text(
+        "package main\n"
+        "var count = 0\n"
+        "var name string\n"
+    )
+    concepts = scan_codebase(tmp)
+    vars_found = {c.title for c in concepts if c.type == "Variable"}
+    assert "count" in vars_found, f"count not in vars: {vars_found}"
+    assert "name" in vars_found, f"name not in vars: {vars_found}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_go_grouped_const():
+    """Go grouped const (with parens) extracts all specs."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "main.go").write_text(
+        "package main\n"
+        "const (\n"
+        "    StatusOK = 200\n"
+        "    StatusNotFound = 404\n"
+        ")\n"
+    )
+    concepts = scan_codebase(tmp)
+    consts = {c.title for c in concepts if c.type == "Constant"}
+    assert "StatusOK" in consts, f"StatusOK not in constants: {consts}"
+    assert "StatusNotFound" in consts, f"StatusNotFound not in constants: {consts}"
+    import shutil; shutil.rmtree(tmp)
+
+
+# ── Ruby singleton_method (def self.foo) (Tier 3) ─────────────────────────
+
+def test_ruby_singleton_method():
+    """Ruby def self.foo is extracted as a Function concept."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.rb").write_text(
+        "class Service\n"
+        "  def self.status\n"
+        "    :ok\n"
+        "  end\n"
+        "  def instance_method\n"
+        "  end\n"
+        "end\n"
+    )
+    concepts = scan_codebase(tmp)
+    funcs = {c.title for c in concepts if c.type == "Function"}
+    assert "status" in funcs, f"singleton method 'status' not found in {funcs}"
+    assert "instance_method" in funcs, f"instance method not found in {funcs}"
+    status = next((c for c in concepts if c.title == "status"), None)
+    assert status is not None
+    assert "self.status" in status.signature, f"signature should show self.status: {status.signature}"
+    assert "singleton" in status.visibility, f"visibility should include 'singleton': {status.visibility}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_ruby_singleton_in_class_methods():
+    """Singleton methods appear in the class method listing."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.rb").write_text(
+        "class Service\n"
+        "  def self.status\n"
+        "    :ok\n"
+        "  end\n"
+        "end\n"
+    )
+    concepts = scan_codebase(tmp)
+    svc = next((c for c in concepts if c.type == "Class" and c.title == "Service"), None)
+    assert svc is not None, "Service class not found"
+    assert "status" in svc.methods, f"Service.methods should include status: {svc.methods}"
+    import shutil; shutil.rmtree(tmp)
+
+
+# ── C++ full template<typename T> signatures (Tier 3) ─────────────────────
+
+def test_cpp_template_signature_includes_prefix():
+    """C++ template class signature includes 'template<typename T>' prefix."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.cpp").write_text(
+        "template<typename T>\n"
+        "class Container {\n"
+        "public:\n"
+        "    void add(T val) {}\n"
+        "};\n"
+    )
+    concepts = scan_codebase(tmp)
+    container = next((c for c in concepts if c.type == "Class" and c.title == "Container"), None)
+    assert container is not None, "Container class not found"
+    assert "template<" in container.signature, \
+        f"Container signature should include template<: {container.signature}"
+    assert "typename T" in container.signature, \
+        f"Container signature should include 'typename T': {container.signature}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_cpp_template_function_signature():
+    """C++ template function signature includes 'template<...>' prefix."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.cpp").write_text(
+        "template<typename T, typename U>\n"
+        "T convert(U val) { return T(); }\n"
+    )
+    concepts = scan_codebase(tmp)
+    convert = next((c for c in concepts if c.type == "Function" and c.title == "convert"), None)
+    assert convert is not None, "convert() not found"
+    assert "template<" in convert.signature, \
+        f"convert signature should include template<: {convert.signature}"
+    assert "typename T, typename U" in convert.signature, \
+        f"convert signature should include type params: {convert.signature}"
+    import shutil; shutil.rmtree(tmp)
+
+
+def test_cpp_template_type_params_still_populated():
+    """C++ template type_params are populated alongside template prefix."""
+    from okf.generator import scan_codebase
+    import tempfile
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "test.cpp").write_text(
+        "template<typename T>\n"
+        "class Container {\n"
+        "public:\n"
+        "    void add(T val) {}\n"
+        "};\n"
+    )
+    concepts = scan_codebase(tmp)
+    container = next((c for c in concepts if c.type == "Class" and c.title == "Container"), None)
+    assert container is not None
+    assert container.type_params, f"Container should have type_params"
+    assert any("T" in tp for tp in container.type_params), \
+        f"Container type_params should contain 'T': {container.type_params}"
+    import shutil; shutil.rmtree(tmp)
