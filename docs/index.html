@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>okf-generator — the knowledge layer for AI coding agents</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Crect width='26' height='26' rx='6' fill='%23e3b341'/%3E%3Ccircle cx='7.5' cy='8' r='2' fill='%230b0e13'/%3E%3Ccircle cx='18.5' cy='8' r='2' fill='%230b0e13'/%3E%3Ccircle cx='13' cy='18' r='2' fill='%230b0e13'/%3E%3Cpath d='M8.8 9.2 L11.6 16.6 M17.2 9.2 L14.4 16.6 M9.5 8 H16.5' stroke='%230b0e13' stroke-width='1.1' stroke-linecap='round'/%3E%3C/svg%3E">
-
 <meta name="theme-color" content="#0b0e13">
 <meta name="description" content="okf-generator turns any codebase into a structured, agent-readable knowledge bundle. 10 languages, 17 manifest formats, zero LLM required.">
 <link rel="canonical" href="https://umairbaig8.github.io/okf-generator/">
@@ -260,14 +259,32 @@
   /* ---------- Languages ---------- */
   .pill-grid{display:flex; flex-wrap:wrap; gap:10px;}
   .pill{
-    font-family:var(--mono); font-size:13px; padding:8px 14px; border-radius:99px;
+    font-family:var(--mono); font-size:13px; padding:8px 14px 8px 12px; border-radius:99px;
     border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
+    display:inline-flex; align-items:center; gap:8px;
   }
-  .manifest-strip{
-    margin-top:28px; font-family:var(--mono); font-size:12.5px; color:var(--text-faint);
-    line-height:2.1; word-spacing:2px;
+  .lang-dot{
+    display:inline-block; width:9px; height:9px; border-radius:50%; flex-shrink:0;
   }
-  .manifest-strip span{color:var(--text-dim); border-bottom:1px dotted var(--border);}
+
+  /* ---------- Manifest ecosystem chips ---------- */
+  .manifest-groups{
+    margin-top:28px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  }
+  @media (max-width:800px){ .manifest-groups{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:480px){ .manifest-groups{grid-template-columns:1fr;} }
+  .manifest-group{
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px;
+  }
+  .manifest-group-head{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim);
+    font-weight:600; margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .manifest-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .manifest-chips code{
+    font-family:var(--mono); font-size:11.5px; color:var(--blue);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:5px; padding:3px 7px;
+  }
 
   /* ---------- Feature grid ---------- */
   .feat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:10px; overflow:hidden;}
@@ -635,20 +652,74 @@ Signature: class WorldBankConnector
       <p class="section-sub">Deterministic extraction — no LLM call needed to index a codebase.</p>
     </div>
     <div class="pill-grid">
-      <span class="pill">Python</span>
-      <span class="pill">JavaScript</span>
-      <span class="pill">TypeScript</span>
-      <span class="pill">Go</span>
-      <span class="pill">Java</span>
-      <span class="pill">Rust</span>
-      <span class="pill">Ruby</span>
-      <span class="pill">C</span>
-      <span class="pill">C++</span>
-      <span class="pill">C#</span>
-      <span class="pill">SQL</span>
+      <span class="pill"><i class="lang-dot" style="background:#3776AB"></i>Python</span>
+      <span class="pill"><i class="lang-dot" style="background:#F7DF1E"></i>JavaScript</span>
+      <span class="pill"><i class="lang-dot" style="background:#3178C6"></i>TypeScript</span>
+      <span class="pill"><i class="lang-dot" style="background:#00ADD8"></i>Go</span>
+      <span class="pill"><i class="lang-dot" style="background:#EA9C2A"></i>Java</span>
+      <span class="pill"><i class="lang-dot" style="background:#CE422B"></i>Rust</span>
+      <span class="pill"><i class="lang-dot" style="background:#CC342D"></i>Ruby</span>
+      <span class="pill"><i class="lang-dot" style="background:#A8B9CC"></i>C</span>
+      <span class="pill"><i class="lang-dot" style="background:#00599C"></i>C++</span>
+      <span class="pill"><i class="lang-dot" style="background:#68217A"></i>C#</span>
+      <span class="pill"><i class="lang-dot" style="background:#5A9BD4"></i>SQL</span>
     </div>
-    <div class="manifest-strip">
-      <span>requirements.txt</span> · <span>pyproject.toml</span> · <span>poetry.lock</span> · <span>package.json</span> · <span>yarn.lock</span> · <span>pnpm-lock.yaml</span> · <span>Cargo.toml</span> · <span>Cargo.lock</span> · <span>go.mod</span> · <span>go.sum</span> · <span>composer.json</span> · <span>pom.xml</span> · <span>Gemfile</span> · <span>build.gradle</span> · <span>Package.swift</span> · <span>project.clj</span> · <span>mix.exs</span>
+
+    <div class="manifest-groups">
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#3776AB"></i>pip / Python</div>
+        <div class="manifest-chips">
+          <code>requirements.txt</code><code>pyproject.toml</code><code>poetry.lock</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#F7DF1E"></i>npm / JS</div>
+        <div class="manifest-chips">
+          <code>package.json</code><code>yarn.lock</code><code>pnpm-lock.yaml</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#CE422B"></i>cargo / Rust</div>
+        <div class="manifest-chips">
+          <code>Cargo.toml</code><code>Cargo.lock</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#00ADD8"></i>go / Go</div>
+        <div class="manifest-chips">
+          <code>go.mod</code><code>go.sum</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#EA9C2A"></i>maven &amp; gradle / Java</div>
+        <div class="manifest-chips">
+          <code>pom.xml</code><code>build.gradle</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#CC342D"></i>bundler / Ruby</div>
+        <div class="manifest-chips">
+          <code>Gemfile</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#8892BF"></i>composer / PHP</div>
+        <div class="manifest-chips">
+          <code>composer.json</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#F05138"></i>swiftpm / Swift</div>
+        <div class="manifest-chips">
+          <code>Package.swift</code>
+        </div>
+      </div>
+      <div class="manifest-group">
+        <div class="manifest-group-head"><i class="lang-dot" style="background:#5881D8"></i>other</div>
+        <div class="manifest-chips">
+          <code>project.clj</code><code>mix.exs</code>
+        </div>
+      </div>
     </div>
   </div>
   </section>
@@ -939,7 +1010,7 @@ Signature: class WorldBankConnector
 // one fade+rise, no bounce/parallax gimmicks. Skipped under reduced-motion via CSS.
 (function(){
   var targets = document.querySelectorAll(
-    '.section-head, .step, .feat, .install-cell, .mcp-callout, .compare-table, .faq-list details'
+    '.section-head, .step, .feat, .install-cell, .manifest-group, .mcp-callout, .compare-table, .faq-list details'
   );
   if (!('IntersectionObserver' in window) || !targets.length) return;
   targets.forEach(function(el){ el.classList.add('reveal'); });
