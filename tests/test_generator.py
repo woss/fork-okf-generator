@@ -1580,6 +1580,32 @@ def test_okf_config_env_var_overrides_file(tmp_path):
             os.environ.pop("OKF_MODEL", None)
 
 
+def test_okf_config_serve_defaults():
+    """Config serve defaults are valid integers."""
+    from okf.config import load, _get
+    cfg = load()
+    port = _get(cfg, "serve.port", 0)
+    assert isinstance(port, int) and 0 < port < 65536
+    host = _get(cfg, "serve.host", "")
+    assert isinstance(host, str) and host
+
+
+def test_okf_config_serve_env_override():
+    """Env var OKF_SERVE_PORT overrides config default."""
+    import os
+    from okf.config import load, _get
+    saved = os.environ.get("OKF_SERVE_PORT")
+    try:
+        os.environ["OKF_SERVE_PORT"] = "9090"
+        cfg = load()
+        assert _get(cfg, "serve.port") == 9090
+    finally:
+        if saved:
+            os.environ["OKF_SERVE_PORT"] = saved
+        else:
+            os.environ.pop("OKF_SERVE_PORT", None)
+
+
 def test_okf_config_dump_and_read(tmp_path):
     """Written config file can be read back."""
     from okf.config import dump, load, _get

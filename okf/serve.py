@@ -16,8 +16,10 @@ import webbrowser
 from pathlib import Path
 
 
-PORT = 8000
-HOST = "127.0.0.1"
+from okf.config import load as load_config, _get
+_cfg = load_config()
+PORT = _get(_cfg, "serve.port", 8000)
+HOST = _get(_cfg, "serve.host", "127.0.0.1")
 PID_DIR = Path.home() / ".cache" / "okf"
 PID_FILE = PID_DIR / "serve.pid"
 

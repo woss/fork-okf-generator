@@ -34,6 +34,14 @@ DEFAULTS = {
     "llm.base_url": "http://localhost:8080/v1",
     "llm.model": "local-model",
     "llm.max_workers": 2,
+    "serve.port": 8000,
+    "serve.host": "127.0.0.1",
+    "lookup.bundle": "./okf_bundle",
+    "lookup.limit": 10,
+    "lookup.min_score": 0.1,
+    "generate.output_dir": "./okf_bundle",
+    "mcp.port": 0,
+    "mcp.host": "127.0.0.1",
 }
 
 ENV_TO_KEY = {
@@ -41,6 +49,12 @@ ENV_TO_KEY = {
     "OKF_MODEL": "llm.model",
     "OKF_API_KEY": "llm.api_key",
     "OKF_MAX_WORKERS": "llm.max_workers",
+    "OKF_SERVE_PORT": "serve.port",
+    "OKF_SERVE_HOST": "serve.host",
+    "OKF_LOOKUP_BUNDLE": "lookup.bundle",
+    "OKF_LOOKUP_LIMIT": "lookup.limit",
+    "OKF_GENERATE_OUTPUT": "generate.output_dir",
+    "OKF_MCP_PORT": "mcp.port",
 }
 
 
@@ -89,11 +103,12 @@ def load() -> dict:
     for env_key, cfg_key in ENV_TO_KEY.items():
         val = os.environ.get(env_key)
         if val:
-            if "max_workers" in env_key.lower():
-                try:
+            # Auto-convert numeric strings to int
+            try:
+                if val.lstrip("-").isdigit():
                     val = int(val)
-                except ValueError:
-                    continue
+            except (AttributeError, ValueError):
+                pass
             _set(cfg, cfg_key, val)
 
     return cfg

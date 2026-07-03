@@ -395,7 +395,9 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=__doc__,
     )
     p.add_argument("query",       nargs="*",           help="Search tokens (name or keywords)")
-    p.add_argument("--bundle",    default="./okf_bundle", help="Path to OKF bundle dir (default: ./okf_bundle)")
+    from okf.config import load as load_config, _get
+    _lcfg = load_config()
+    p.add_argument("--bundle",    default=_get(_lcfg, "lookup.bundle", "./okf_bundle"), help="Path to OKF bundle dir")
     p.add_argument("--file",      default="",          help="Filter by source file path (e.g. src/connectors/economic_data.py)")
     p.add_argument("--type",      default="",          help="Filter by concept type: Function | Class | Module | Dependency")
     p.add_argument("--tag",       action="append", default=[], dest="tags", help="Filter by tag (repeatable): --tag lang:python --tag type:Class")
