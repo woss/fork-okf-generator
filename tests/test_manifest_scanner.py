@@ -366,6 +366,17 @@ def test_parse_dockerfile_no_tag_defaults_to_latest(tmp_path):
     assert deps[0] == {"name": "alpine", "ecosystem": "docker", "version": "latest", "dev": False}
 
 
+def test_parse_containerfile_same_as_dockerfile(tmp_path):
+    """Containerfile uses the same parser as Dockerfile."""
+    from okf.manifest_scanner import parse_dockerfile, is_manifest_file
+    from pathlib import Path
+    assert is_manifest_file(Path("Containerfile"))
+    f = _write(tmp_path, "Containerfile", "FROM alpine:3.19\nRUN pip install requests")
+    deps = parse_dockerfile(f)
+    assert len(deps) == 2
+    assert deps[0]["name"] == "alpine"
+
+
 def test_parse_dockerfile_multistage(tmp_path):
     from okf.manifest_scanner import parse_dockerfile
     f = _write(tmp_path, "Dockerfile", "FROM node:20 AS builder\nFROM python:3.12-slim")

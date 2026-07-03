@@ -54,6 +54,7 @@ MANIFEST_HANDLERS: dict[str, str] = {
     "project.clj": "parse_project_clj",
     "mix.exs": "parse_mix_exs",
     "Dockerfile": "parse_dockerfile",
+    "Containerfile": "parse_dockerfile",
     "docker-compose.yml": "parse_docker_compose",
     "docker-compose.yaml": "parse_docker_compose",
 }

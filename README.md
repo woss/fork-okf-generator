@@ -338,7 +338,7 @@ Push bundles to S3/GCS/Azure for centralized multi-tenant access. Serve them as 
 
 ### Manifest / Build Formats (17)
 
-`requirements.txt` · `pyproject.toml` · `package.json` · `Cargo.toml` · `Cargo.lock` · `yarn.lock` · `pnpm-lock.yaml` · `go.mod` · `go.sum` · `poetry.lock` · `composer.json` · `pom.xml` · `Gemfile` · `build.gradle` / `.kts` · `Package.swift` · `project.clj` · `mix.exs` · `Dockerfile` · `docker-compose.yml`
+`requirements.txt` · `pyproject.toml` · `package.json` · `Cargo.toml` · `Cargo.lock` · `yarn.lock` · `pnpm-lock.yaml` · `go.mod` · `go.sum` · `poetry.lock` · `composer.json` · `pom.xml` · `Gemfile` · `build.gradle` / `.kts` · `Package.swift` · `project.clj` · `mix.exs` · `Dockerfile` / `Containerfile` · `docker-compose.yml`
 
 > Full table with parser details + architectural query examples: **[docs/languages-and-manifests.md](docs/languages-and-manifests.md)**
 
