@@ -93,6 +93,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **PHP parser** — `okf/parsers/php.py` extracts classes, interfaces, traits, enums, functions, methods, visibility, typed params, return types, PHPDoc blocks. Fixtures at `tests/fixtures/realworld/php/{easy,complex}/`. 3 new fixture tests.
+
 ### Planned
 - **Web dashboard** — FastAPI-powered live bundle browser beyond static viz.html
 - **Plugin system** — `okf plugin install <lang>` to add parsers without modifying core

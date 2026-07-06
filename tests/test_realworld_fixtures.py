@@ -26,6 +26,7 @@ LANGUAGE_DIRS = {
     "sql":        REALWORLD / "sql",
     "swift":      REALWORLD / "swift",
     "kotlin":     REALWORLD / "kotlin",
+    "php":        REALWORLD / "php",
 }
 
 
@@ -247,6 +248,16 @@ def test_kotlin_complex_has_interfaces_generics_data_classes():
     # enums
     enum_names = [c.title for c in concepts if c.type == "Class" and "Status" in c.title]
     assert enum_names, f"No enums found in Kotlin complex"
+
+
+def test_php_complex_has_interfaces_traits_enums():
+    """PHP complex has interfaces, traits, enums, classes, methods."""
+    concepts = scan(REALWORLD / "php" / "complex")
+    types = {c.type for c in concepts}
+    assert "Interface" in types, f"No interfaces in PHP complex: {types}"
+    assert "Enum" in types, f"No enums in PHP complex: {types}"
+    funcs = [c for c in concepts if c.type == "Function"]
+    assert len(funcs) >= 4, f"PHP complex: only {len(funcs)} functions/methods"
 
 
 # ── Bundle generation ───────────────────────────────────────────────────────

@@ -354,7 +354,7 @@ Push bundles to S3/GCS/Azure for centralized multi-tenant access. Serve them as 
 
 ## Language & Manifest Coverage
 
-### Code Languages (13)
+### Code Languages (14)
 
 Each language lives in its own file under `okf/parsers/`. Adding a new language requires one file + one registry entry — no changes to the core generator.
 
@@ -367,6 +367,7 @@ Each language lives in its own file under `okf/parsers/`. Adding a new language 
 | Rust | `parsers/rust.py` | tree-sitter | Fns, structs, enums, traits, impl blocks, `///`/`//!`, generics, `#[derive]`, visibility |
 | Swift | `parsers/swift.py` | tree-sitter | Classes, structs, enums, protocols (→Interface), generics, methods, init, doc comments |
 | Kotlin | `parsers/kotlin.py` | tree-sitter | Classes, data classes, objects, enums, interfaces, generics, constructor params, visibility |
+| PHP | `parsers/php.py` | tree-sitter | Classes, interfaces, traits, enums, functions, methods, visibility, typed params, return types, PHPDoc |
 | Ruby | `parsers/ruby.py` | tree-sitter | Defs, classes, modules, `#`/YARD doc comments, superclass |
 | C | `parsers/c.py` | tree-sitter | Functions, structs, enums, typedefs, `/**` doc comments |
 | C++ | `parsers/cpp.py` | tree-sitter | Functions, classes, methods, templates, base classes, visibility |
