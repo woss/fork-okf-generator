@@ -2,7 +2,7 @@
 
 **Author:** AI agent / CI
 **Canonical runner:** `bash tests/test.sh` (generates `TEST_REPORT.html`)
-**Fixture corpus:** `tests/fixtures/realworld/` (96 files, 13 languages, 22 projects)
+**Fixture corpus:** `tests/fixtures/realworld/` (106 files, 17 languages, 28 projects)
 **Unit tests:** `pytest tests/` (173+ tests)
 
 ---

@@ -27,6 +27,9 @@ LANGUAGE_DIRS = {
     "swift":      REALWORLD / "swift",
     "kotlin":     REALWORLD / "kotlin",
     "php":        REALWORLD / "php",
+    "dart":       REALWORLD / "dart",
+    "scala":      REALWORLD / "scala",
+    "julia":      REALWORLD / "julia",
 }
 
 
@@ -258,6 +261,36 @@ def test_php_complex_has_interfaces_traits_enums():
     assert "Enum" in types, f"No enums in PHP complex: {types}"
     funcs = [c for c in concepts if c.type == "Function"]
     assert len(funcs) >= 4, f"PHP complex: only {len(funcs)} functions/methods"
+
+
+def test_dart_complex_has_classes_mixins_enums():
+    """Dart complex has classes, mixins, enums, top-level functions."""
+    concepts = scan(REALWORLD / "dart" / "complex")
+    types = {c.type for c in concepts}
+    assert "Enum" in types, f"No enums in Dart complex: {types}"
+    funcs = [c for c in concepts if c.type == "Function"]
+    assert len(funcs) >= 4, f"Dart complex: only {len(funcs)} functions (expected >=4)"
+
+
+def test_scala_complex_has_traits_enums_classes():
+    """Scala complex has traits, enums, classes, case classes, functions."""
+    concepts = scan(REALWORLD / "scala" / "complex")
+    types = {c.type for c in concepts}
+    assert "Interface" in types, f"No traits (Interface) in Scala complex: {types}"
+    assert "Enum" in types, f"No enums in Scala complex: {types}"
+    funcs = [c for c in concepts if c.type == "Function"]
+    assert len(funcs) >= 3, f"Scala complex: only {len(funcs)} functions (expected >=3)"
+
+
+def test_julia_complex_has_functions_structs_constants():
+    """Julia complex has functions, structs, abstract types, constants."""
+    concepts = scan(REALWORLD / "julia" / "complex")
+    types = {c.type for c in concepts}
+    assert "Function" in types, f"No functions in Julia complex: {types}"
+    assert "Class" in types, f"No structs (Class) in Julia complex: {types}"
+    assert "Constant" in types, f"No constants in Julia complex: {types}"
+    funcs = [c for c in concepts if c.type == "Function"]
+    assert len(funcs) >= 2, f"Julia complex: only {len(funcs)} functions (expected >=2)"
 
 
 # ── Bundle generation ───────────────────────────────────────────────────────

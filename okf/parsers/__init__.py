@@ -14,6 +14,9 @@ from okf.parsers.sql import SQLParser
 from okf.parsers.swift import SwiftParser
 from okf.parsers.kotlin import KotlinParser
 from okf.parsers.php import PHPParser
+from okf.parsers.dart import DartParser
+from okf.parsers.scala import ScalaParser
+from okf.parsers.julia import JuliaParser
 
 # Extension → parser class mapping.
 # JS/TS is special-cased in get_parser() because it sets _path_ext for grammar selection.
@@ -43,6 +46,10 @@ EXTENSION_MAP: dict[str, type] = {
     ".kts": KotlinParser,
     ".php": PHPParser,
     ".phtml": PHPParser,
+    ".dart": DartParser,
+    ".scala": ScalaParser,
+    ".sc": ScalaParser,
+    ".jl": JuliaParser,
 }
 
 

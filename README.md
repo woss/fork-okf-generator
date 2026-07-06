@@ -35,7 +35,7 @@
 
 ![okf-generator demo](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/demo.gif)
 
-`okf generate` scans any repo using tree-sitter AST parsers, resolves cross-references across 10 languages, and outputs a structured knowledge graph. Explore it interactively or consume it programmatically — no LLM required.
+`okf generate` scans any repo using tree-sitter AST parsers, resolves cross-references across 17 languages, and outputs a structured knowledge graph. Explore it interactively or consume it programmatically — no LLM required.
 
 ```bash
 # Generate a knowledge bundle from any codebase
@@ -94,7 +94,7 @@ pip install "okf-generator[llm]"                  # with LLM enrichment + traini
 
 AI coding agents waste enormous amounts of context re-reading entire files to find one function signature or dependency version. Cloud models with 200K token windows mask this cost; local SLMs (Gemma, Llama, Phi) on a MacBook run out of memory immediately.
 
-`okf-generator` solves this by converting source code into a **deterministic, cross-referenced knowledge graph**. Using tree-sitter AST parsers across 10 languages, every function, class, module, and dependency becomes a structured node with typed edges (calls, called-by, imports, depends-on).
+`okf-generator` solves this by converting source code into a **deterministic, cross-referenced knowledge graph**. Using tree-sitter AST parsers across 17 languages, every function, class, module, and dependency becomes a structured node with typed edges (calls, called-by, imports, depends-on).
 
 ```bash
 # Before touching WorldBankConnector, get its full graph context
@@ -121,7 +121,7 @@ No re-reading the file. No guessing. No LLM call required.
 
 ![okf-generator pipeline](https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/workflow.png)
 
-**1. Scan** — tree-sitter AST parsers extract every function, class, method, and module with signature, params, docstring, and return types across 10 languages.
+**1. Scan** — tree-sitter AST parsers extract every function, class, method, and module with signature, params, docstring, and return types across 17 languages.
 
 **2. Link** — the cross-reference linker resolves two edge types:
 - Imports → Dependencies — module imports matched against the dependency index.
@@ -354,7 +354,7 @@ Push bundles to S3/GCS/Azure for centralized multi-tenant access. Serve them as 
 
 ## Language & Manifest Coverage
 
-### Code Languages (14)
+### Code Languages (17)
 
 Each language lives in its own file under `okf/parsers/`. Adding a new language requires one file + one registry entry — no changes to the core generator.
 
@@ -368,6 +368,9 @@ Each language lives in its own file under `okf/parsers/`. Adding a new language 
 | Swift | `parsers/swift.py` | tree-sitter | Classes, structs, enums, protocols (→Interface), generics, methods, init, doc comments |
 | Kotlin | `parsers/kotlin.py` | tree-sitter | Classes, data classes, objects, enums, interfaces, generics, constructor params, visibility |
 | PHP | `parsers/php.py` | tree-sitter | Classes, interfaces, traits, enums, functions, methods, visibility, typed params, return types, PHPDoc |
+| Dart | `parsers/dart.py` | tree-sitter | Classes, mixins, enums, functions, constructors, methods |
+| Scala | `parsers/scala.py` | tree-sitter | Classes, objects, traits (→Interface), enums, functions, visibility, typed params |
+| Julia | `parsers/julia.py` | tree-sitter | Functions, structs (→Class), abstract types (→Interface), constants, macros |
 | Ruby | `parsers/ruby.py` | tree-sitter | Defs, classes, modules, `#`/YARD doc comments, superclass |
 | C | `parsers/c.py` | tree-sitter | Functions, structs, enums, typedefs, `/**` doc comments |
 | C++ | `parsers/cpp.py` | tree-sitter | Functions, classes, methods, templates, base classes, visibility |
@@ -486,7 +489,7 @@ okf install cline       # Cline rules
 
 | | **okf-generator** | Other OKF producers |
 |---|---|---|
-| Language coverage | 13 languages, modular parsers (`okf/parsers/*.py`) — add one in minutes | Usually 1 language or doc-only |
+| Language coverage | 17 languages, modular parsers (`okf/parsers/*.py`) — add one in minutes | Usually 1 language or doc-only |
 | Cross-reference linking | Imports → dependencies, function calls → caller/callee across all languages | Not typically supported |
 | Dependency/manifest parsing | 17 formats (pip, npm, cargo, go, maven, gradle, composer, rubygems, swiftpm, clojars, hex, +7) | Not typically supported |
 | Extraction | Zero-LLM, deterministic, offline | Often LLM-required for every concept |

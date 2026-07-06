@@ -95,6 +95,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **PHP parser** — `okf/parsers/php.py` extracts classes, interfaces, traits, enums, functions, methods, visibility, typed params, return types, PHPDoc blocks. Fixtures at `tests/fixtures/realworld/php/{easy,complex}/`. 3 new fixture tests.
+- **Dart parser** — `okf/parsers/dart.py` extracts classes, mixins, enums, functions, constructors, methods. Fixtures at `tests/fixtures/realworld/dart/{easy,complex}/`. 3 new fixture tests.
+- **Scala parser** — `okf/parsers/scala.py` extracts classes, objects, traits (→Interface), enums, functions, methods, visibility, typed params. Fixtures at `tests/fixtures/realworld/scala/{easy,complex}/`. 3 new fixture tests.
+- **Julia parser** — `okf/parsers/julia.py` extracts functions, structs (→Class), abstract types (→Interface), constants, macros. Fixtures at `tests/fixtures/realworld/julia/{easy,complex}/`. 3 new fixture tests.
 
 ### Planned
 - **Web dashboard** — FastAPI-powered live bundle browser beyond static viz.html
