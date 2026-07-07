@@ -1405,7 +1405,20 @@ def enrich_bundle(
         all_map = {}
         concepts = []
         for r2 in raw:
-            c = Concept(type=r2.get("type", ""), title=r2.get("title", ""), resource=r2.get("resource", ""), signature=r2.get("signature", ""), description=r2.get("description", ""), concept_id=r2.get("concept_id", ""), docstring=r2.get("sections", {}).get("docstring", ""))
+            s = r2.get("sections", {})
+            c = Concept(
+                type=r2.get("type", ""),
+                title=r2.get("title", ""),
+                description=r2.get("description", ""),
+                resource=r2.get("resource", ""),
+                tags=r2.get("tags", []),
+                signature=s.get("signature", ""),
+                docstring=s.get("docstring", ""),
+                params=[dict(zip(["name", "annotation", "default"], [x.strip().strip("`") for x in p.split("|")[1:4]])) for p in s.get("parameters", "").splitlines() if "|" in p and "Name" not in p and "---" not in p] or r2.get("params", []),
+                returns=s.get("returns", "").strip("`").strip(),
+                source_lines=_parse_source_line_range(s.get("source", "")),
+                concept_id=r2.get("concept_id", ""),
+            )
             concepts.append(c)
             all_map[c.concept_id] = c
 
@@ -1460,7 +1473,22 @@ def enrich_bundle(
         all_map = {}
         concepts = []
         for r2 in raw:
-            c = Concept(type=r2.get("type", ""), title=r2.get("title", ""), resource=r2.get("resource", ""), signature=r2.get("signature", ""), description=r2.get("description", ""), concept_id=r2.get("concept_id", ""), source_lines=_parse_source_line_range(r2.get("sections", {}).get("source", "")))
+            s = r2.get("sections", {})
+            c = Concept(
+                type=r2.get("type", ""),
+                title=r2.get("title", ""),
+                description=r2.get("description", ""),
+                resource=r2.get("resource", ""),
+                tags=r2.get("tags", []),
+                signature=s.get("signature", ""),
+                docstring=s.get("docstring", ""),
+                params=[dict(zip(["name", "annotation", "default"], p.split("|")[1:4])) for p in s.get("parameters", "").splitlines() if "|" in p and "Name" not in p and "---" not in p] or r2.get("params", []),
+                returns=s.get("returns", "").strip("`").strip(),
+                methods=[m.strip("`") for m in s.get("methods", "").splitlines() if m.strip().startswith("- `")],
+                source_lines=_parse_source_line_range(s.get("source", "")),
+                concept_id=r2.get("concept_id", ""),
+                related=r2.get("related", []),
+            )
             concepts.append(c)
             all_map[c.concept_id] = c
 
