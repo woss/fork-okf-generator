@@ -95,7 +95,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - **Plugin system** — `okf plugin install <lang>` to add parsers without modifying core
-- **mkdocs documentation site**
+
+---
+
+## [0.1.39] — 2026-07-07
+
+### Added
+- **mkdocs documentation site** — `mkdocs.yml` with Material theme, organizes existing docs (CLI reference, agent integration, CI/CD, development, API) into a navigable portal. Run `mkdocs serve` for local preview, `mkdocs build` for static output.
+- **Branding assets** — New SVG logo family (light, dark, icon) in `docs/images/` with project purple theme. Nav bar now shows the streaming-data icon.
+- **Landing page copy buttons** — Clipboard icons on all step commands, agent install cards, enrichment commands, and code blocks.
+- **Favicon** — `okf-icon.svg` linked in landing page `<head>`.
+- **Auto-version badge** — Fetches latest release version from PyPI API.
+
+### Changed
+- Tagline updated to "HIGH-VELOCITY CODEBASE PARSER" across hero, meta description, README.
+- Nav bar: floating glass island effect on scroll via GPU-composited transitions.
+- Landing page language pills updated from 13→17 (added PHP, Dart, Scala, Julia).
+- `pyproject.toml`: new optional dep group `[dashboard]` (fastapi, uvicorn), `[dev]` now includes mkdocs + mkdocs-material.
+- `docs/index.md` created as symlink to root README for mkdocs compatibility.
 
 ---
 
@@ -552,7 +569,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.38...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.39...HEAD
+[0.1.39]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.39
 [0.1.38]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.38
 [0.1.37]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.37
 [0.1.36]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.36

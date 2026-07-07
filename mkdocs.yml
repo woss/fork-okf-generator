@@ -1,0 +1,44 @@
+site_name: okf-generator
+site_description: High-velocity codebase parser — structured, agent-ready knowledge across 17 languages
+site_url: https://umairbaig8.github.io/okf-generator/
+repo_url: https://github.com/UmairBaig8/okf-generator
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    primary: deep_purple
+    accent: amber
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: index.md#installation
+    - Quick Start: index.md#quick-start
+  - User Guide:
+    - CLI Reference: cli-reference.md
+    - Language Support: languages-and-manifests.md
+    - Agent Integration: agent-integration.md
+    - CI/CD: ci-cd.md
+  - Development:
+    - Adding a Language: development.md
+  - API Reference: python-api.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/UmairBaig8/okf-generator
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/okf-generator/
