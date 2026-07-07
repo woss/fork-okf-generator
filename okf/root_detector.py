@@ -4,7 +4,6 @@ Supports all languages by checking for common project marker files.
 Falls back to `.git/` directory as the universal marker.
 """
 
-import os
 from pathlib import Path
 
 # Priority-ordered list of marker files that signal a project root.

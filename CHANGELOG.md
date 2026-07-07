@@ -93,11 +93,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Project root auto-detection** — `okf generate` can now be run without arguments. It walks up the directory tree looking for project markers (`pyproject.toml`, `Cargo.toml`, `package.json`, `go.mod`, `.git/`, etc.) across all languages and auto-detects the source root. Falls back to current directory.
-
 ### Planned
 - **Plugin system** — `okf plugin install <lang>` to add parsers without modifying core
+
+---
+
+## [0.1.40] — 2026-07-07
+
+### Added
+- **Project root auto-detection** — `okf generate` can now be run without arguments. Walks up the directory tree looking for project markers (`pyproject.toml`, `Cargo.toml`, `package.json`, `go.mod`, `.git/`, etc.) across all languages. Falls back to current directory. (`okf/root_detector.py`)
+- **Full mkdocs documentation site** — Restructured docs with dedicated pages for Installation, Quick Start, Configuration, CLI Reference, Bundle Format, Language Coverage, Agent Integration, MCP Server, LLM Enrichment, CI/CD, Visualization, Comparison, Troubleshooting, Architecture, Contributing, API Reference, Changelog. Material theme with dark/light toggle, navigation breadcrumbs, header auto-hide, announcement bar, section index pages.
+- **Branding assets** — SVG logo family (light, dark, icon, white header variant), favicon, updated banner. Landing page: floating glass nav, 13→17 language pills, copy buttons on code blocks, auto-version badge from PyPI.
+- **PyPI docs link** updated to point to mkdocs site.
+
+### Changed
+- Landing page tagline to "High-Velocity Codebase Parser"
+- README and docs Home slimmed from 2000→350 words with grid cards and nav links
+- Landing page and docs-site badges synced: added GitHub Stars, MCP Server, Cursor Ready, Claude Ready badges; removed rate-limited downloads badge
+- Bundle Format documentation corrected to match actual code schema
+- `extra.css` removed (was breaking toggle position)
+- `edit_uri` removed (no edit button on docs)
 
 ---
 
@@ -572,7 +587,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.39...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.40...HEAD
+[0.1.40]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.40
 [0.1.39]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.39
 [0.1.38]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.38
 [0.1.37]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.37
