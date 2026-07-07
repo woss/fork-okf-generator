@@ -81,17 +81,20 @@
     .reveal.visible { opacity: 1; transform: none; }
 
     /* NAV */
-    .nav { position: sticky; top: 0; z-index: 100; height: var(--nav-h); background: transparent; }
-    .nav-inner { display: flex; align-items: center; gap: 32px; height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 2; }
-    .nav-scroll-bg { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 96%; max-width: 1100px; height: 54px; border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); background: rgba(255,255,255,0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0.35s ease; z-index: 1; }
-    .nav-scrolled .nav-scroll-bg { opacity: 1; visibility: visible; }
-    .nav-scrolled .nav-inner { height: 54px; gap: 20px; }
+    .nav { position: sticky; top: 0; z-index: 100; height: var(--nav-h); background: rgba(255,255,255,0.08); transition: background 0.3s ease; }
+    .nav-inner { display: flex; align-items: center; gap: 32px; height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    .nav-scrolled { background: rgba(255,255,255,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+    .nav-scrolled .nav-links { gap: 20px; }
     .nav-scrolled .nav-links a { font-size: 13px; }
     .nav-scrolled .btn-ghost { font-size: 12px; padding: 5px 12px; }
     .nav-scrolled .btn-primary { font-size: 12px; padding: 6px 14px; }
     .nav-scrolled .nav-badge { font-size: 10px; padding: 2px 6px; }
-    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: var(--text); flex-shrink: 0; }
-    .nav-logo-icon { width: 132px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 800; }
+    .nav-inner { display: flex; align-items: center; gap: 32px; height: 100%; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: var(--text); flex-shrink: 0; text-decoration: none; }
+    .nav-logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%); border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 900; letter-spacing: -0.5px; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 2px 8px rgba(91,33,182,0.25); }
+    .nav-logo:hover .nav-logo-icon { transform: scale(1.08); box-shadow: 0 4px 16px rgba(91,33,182,0.35); }
+    .nav-logo-text { font-size: 16px; font-weight: 800; background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .nav-logo-dot { display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; margin: 0 0 2px 1px; vertical-align: middle; }
     .nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
     .nav-links a { font-size: 14px; font-weight: 500; color: var(--text-muted); transition: color 0.2s; }
     .nav-links a:hover { color: var(--text); }
@@ -271,10 +274,10 @@
 
   <!-- NAV -->
   <nav class="nav" aria-label="Main navigation">
-    <div class="nav-scroll-bg"></div>
     <div class="container nav-inner">
       <a href="/" class="nav-logo" aria-label="okf-generator home">
-        <div class="nav-logo-icon" aria-hidden="true">OKF Generator</div>
+        <div class="nav-logo-icon" aria-hidden="true">OKF</div>
+        <span class="nav-logo-text">okf-generator<span class="nav-logo-dot"></span></span>
       </a>
       <div class="nav-links" role="list">
         <a href="#how-it-works" role="listitem">How it works</a>
