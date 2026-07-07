@@ -275,7 +275,7 @@
         <a href="#languages" role="listitem">Languages</a>
         <a href="#cli" role="listitem">CLI</a>
         <a href="#faq" role="listitem">FAQ</a>
-        <span class="nav-badge">v0.1.36</span>
+        <span class="nav-badge" id="version-badge">v0.1.38</span>
       </div>
       <div class="nav-actions">
         <a href="https://github.com/UmairBaig8/okf-generator" class="btn-ghost" target="_blank" rel="noopener" aria-label="View on GitHub">
@@ -372,7 +372,7 @@
         <div class="step reveal">
           <div class="step-num" aria-hidden="true">1</div>
           <h3>Scan your codebase</h3>
-          <p>tree-sitter AST parsers extract every function, class, module, and dependency across 13 languages with full signatures and docstrings.</p>
+          <p>tree-sitter AST parsers extract every function, class, module, and dependency across 17 languages with full signatures and docstrings.</p>
           <div class="step-cmd" aria-label="Command: okf generate">okf generate ./my_project ./okf_bundle</div>
         </div>
         <div class="step reveal">
@@ -406,7 +406,7 @@
         <div class="feature-card reveal">
           <div class="feature-icon" aria-hidden="true">🔗</div>
           <h3>Cross-Reference Linker</h3>
-          <p>Resolves imports → dependencies and function calls → caller/callee across all 13 languages. Multi-hop reasoning without grep.</p>
+          <p>Resolves imports → dependencies and function calls → caller/callee across all 17 languages. Multi-hop reasoning without grep.</p>
         </div>
         <div class="feature-card reveal">
           <div class="feature-icon" aria-hidden="true">🗺</div>
@@ -436,7 +436,7 @@
   <section class="languages reveal" id="languages" aria-labelledby="languages-heading">
     <div class="container">
       <p class="section-label">Language Coverage</p>
-      <h2 class="section-title" id="languages-heading">13 languages, modular parsers</h2>
+      <h2 class="section-title" id="languages-heading">17 languages, modular parsers</h2>
       <p class="section-sub">Each language lives in its own parser file. Adding a new language is a self-contained tree-sitter grammar mapping — no core changes.</p>
       <div class="lang-grid" role="list" aria-label="Supported languages">
         <span class="lang-pill" role="listitem"><span class="lang-dot" style="background:#3572A5" aria-hidden="true"></span>Python</span>
@@ -567,6 +567,7 @@
             <tr><td>diff</td><td>okf diff &lt;old&gt; &lt;new&gt; [--impact]</td><td>Compare two bundles, show impact</td></tr>
             <tr><td>visualize</td><td>okf visualize &lt;bundle&gt; [out.html]</td><td>Generate interactive D3 graph</td></tr>
             <tr><td>mcp</td><td>okf mcp &lt;bundle&gt;</td><td>Start MCP server with 7 agent tools</td></tr>
+<tr><td>dashboard</td><td>okf dashboard &lt;bundle&gt; [--port]</td><td>Launch FastAPI live bundle browser + graph</td></tr>
             <tr><td>serve</td><td>okf serve [dir] [--port] [--open]</td><td>Browse bundle via local HTTP server</td></tr>
             <tr><td>install</td><td>okf install [claude|cursor|copilot|…]</td><td>Write agent integration rules/configs</td></tr>
             <tr><td>init</td><td>okf init [dir]</td><td>Interactive wizard for bundle setup</td></tr>
@@ -657,7 +658,7 @@
       <div class="faq-list" role="list">
         <details>
           <summary>Does this require an API key or internet connection?</summary>
-          <div class="faq-answer">No. Core extraction (<code>okf generate</code>) is fully offline and deterministic — no LLM call is made unless you explicitly enable enrichment with <code>--enrich</code>. All 13 language parsers use tree-sitter or Python's stdlib AST and work completely air-gapped.</div>
+          <div class="faq-answer">No. Core extraction (<code>okf generate</code>) is fully offline and deterministic — no LLM call is made unless you explicitly enable enrichment with <code>--enrich</code>. All 17 language parsers use tree-sitter or Python's stdlib AST and work completely air-gapped.</div>
         </details>
         <details>
           <summary>How is this different from RAG or vector search?</summary>
@@ -824,6 +825,15 @@
         card.style.transitionDelay = (i * 80) + 'ms';
       });
     });
+
+    // Auto-fetch latest version from PyPI
+    fetch('https://pypi.org/pypi/okf-generator/json')
+      .then(r => r.json())
+      .then(d => {
+        const v = d.info.version;
+        document.getElementById('version-badge').textContent = 'v' + v;
+      })
+      .catch(() => {}); // silently fall back to hardcoded version
   </script>
 </body>
 </html>
