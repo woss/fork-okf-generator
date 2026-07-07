@@ -32,7 +32,8 @@ def test_mcp_initialize(tmp_path):
 def test_mcp_tools_list(tmp_path):
     s = _make_server(SAMPLE, tmp_path)
     resp = _send(s, {"id": 1, "method": "tools/list"})
-    tools = resp.get("result", [])
+    result = resp.get("result", {})
+    tools = result.get("tools", [])
     names = {t["name"] for t in tools}
     assert "lookup" in names
     assert "bundle_info" in names
@@ -147,6 +148,7 @@ def test_mcp_tool_missing_args(tmp_path):
 def test_mcp_resources_list(tmp_path):
     s = _make_server(SAMPLE, tmp_path)
     resp = _send(s, {"id": 1, "method": "resources/list"})
-    resources = resp.get("result", [])
+    result = resp.get("result", {})
+    resources = result.get("resources", [])
     assert len(resources) > 0
     assert any(r["uri"].startswith("okf://") for r in resources)

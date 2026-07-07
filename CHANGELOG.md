@@ -93,6 +93,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **MCP server spec compliance** — `tools/list` and `resources/list` now wrap results in `{"tools": [...]}` / `{"resources": [...]}` per MCP protocol spec. Fixes OpenCode/Cursor integration.
+- **okf ask** — LLM-powered Q&A over bundles. Supports interactive chat mode (no args) and single question mode. LLM term extraction for better search. Token usage tracking in responses. (`okf ask <question>`)
+- **Token usage tracking** — All LLM calls (enrich, ask) now report prompt/completion/total/reasoning tokens. Resets per `okf generate --enrich` run.
+- **Configurable `max_tokens`** — `llm.max_tokens` in config controls all LLM calls (default 2000).
+- **Security audit token usage** — `okf enrich --mode security` now tracks and reports token usage.
+- **Enrich field preservation** — Enrichment preserves existing fields (tags, params, returns, related) instead of dropping them.
+
+### Changed
+- **Enrich mode fix** — `_enrich_mode` no longer defaults to `"base"` unconditionally. Only activates when `--enrich` flag is passed or `llm.enabled` is `true` in config.
+- **okf ask output** — Shows source list instead of concept count. Strips double fences from signatures, cleans param backticks.
+- **Test improvements** — MCP tests unwrap new `{"tools"|"resources": [...]}` format. Config tests tolerate global `~/.config/okf/config.json`.
+
 ### Planned
 - **Plugin system** — `okf plugin install <lang>` to add parsers without modifying core
 

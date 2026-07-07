@@ -31,13 +31,13 @@ STOP_WORDS = {
 
 def _search_context(concepts, query_parts, llm_client=None, llm_model=None):
     """Search bundle and build context string from top results.
-    
+
     Uses LLM to extract search terms if available, otherwise falls back to stop word filtering.
     Returns (context_string, results, term_usage_dict).
     """
     query = " ".join(query_parts)
     term_usage = {}
-    
+
     # Try LLM-based term extraction first
     tokens = None
     if llm_client and llm_model:
@@ -51,7 +51,8 @@ Question: {query}"""
                 model=llm_model, messages=[{"role": "user", "content": term_prompt}],
                 max_tokens=500, temperature=0.1,
             )
-            import json, re
+            import json
+            import re
             raw = (resp.choices[0].message.content or "").strip()
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw).strip()
@@ -69,13 +70,13 @@ Question: {query}"""
                 }
         except Exception:
             pass
-    
+
     # Fallback: stop word filtering
     if not tokens:
         tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
         if not tokens:
             tokens = query_parts[-3:]
-    
+
     results = search(concepts, tokens=tokens, limit=8)
     context_parts = []
     for c in results:
@@ -148,7 +149,7 @@ def main():
         print("Without an LLM, use okf lookup instead for static search.", file=sys.stderr)
         sys.exit(1)
 
-    from okf.lookup import load_bundle, search
+    from okf.lookup import load_bundle
     concepts = load_bundle(bundle_dir)
 
     from openai import OpenAI
@@ -208,11 +209,11 @@ def main():
     total_u = {k: term_u.get(k, 0) + ans_u.get(k, 0) for k in ("prompt", "completion", "total", "reasoning")}
     print(f"\n  Q: {' '.join(query_parts)}\n")
     print(answer)
-    print(f"\nSources:")
+    print("\nSources:")
     for i, c in enumerate(results[:10], 1):
         desc = c.get("description", "")[:80]
         desc_str = f" — {desc}" if desc else ""
         print(f"  [{i}] {c['type']}: {c['title']}{desc_str}")
         print(f"      {c.get('resource', '')}")
     print(f"\n  Tokens: {_fmt_usage(total_u)}")
-    print(f"  Run okf lookup <Name> for full detail.")
+    print("  Run okf lookup <Name> for full detail.")

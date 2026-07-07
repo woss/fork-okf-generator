@@ -1546,6 +1546,25 @@ def test_cpp_template_function_signature():
     import shutil; shutil.rmtree(tmp)
 
 
+def _global_cfg_value(key: str, fallback: str) -> str:
+    """Read a value from the user's global ~/.config/okf/config.json if it exists."""
+    import json, os
+    p = os.path.expanduser("~/.config/okf/config.json")
+    if os.path.exists(p):
+        try:
+            with open(p) as f:
+                cfg = json.load(f)
+            parts = key.split(".")
+            cur = cfg
+            for part in parts:
+                cur = cur.get(part, {})
+            if cur:
+                return cur
+        except Exception:
+            pass
+    return fallback
+
+
 def test_okf_config_loads_defaults():
     """Config loader returns defaults when no file or env vars set."""
     import os
@@ -1556,7 +1575,8 @@ def test_okf_config_loads_defaults():
     try:
         cfg = load()
         assert _get(cfg, "llm.base_url", "") == "http://localhost:8080/v1"
-        assert _get(cfg, "llm.model", "") == "local-model"
+        expected_model = _global_cfg_value("llm.model", "local-model")
+        assert _get(cfg, "llm.model", "") == expected_model
         assert _get(cfg, "llm.max_workers") == 2
     finally:
         for k, v in saved.items():
@@ -1573,7 +1593,8 @@ def test_okf_config_env_var_overrides_file(tmp_path):
         os.environ["OKF_MODEL"] = "gpt-4"
         cfg = load()
         # Env vars no longer override config (removed by design)
-        assert _get(cfg, "llm.model") == "local-model"
+        expected_model = _global_cfg_value("llm.model", "local-model")
+        assert _get(cfg, "llm.model") == expected_model
     finally:
         if saved:
             os.environ["OKF_MODEL"] = saved
