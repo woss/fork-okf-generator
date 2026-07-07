@@ -145,13 +145,17 @@ Runs `base` + `deep` + `security`, plus a semantic related-links pass:
 
 ## Token usage
 
-Each enrich pass logs token consumption at completion:
+Both `okf enrich` and `okf generate --enrich` log token consumption at completion:
 
 ```
+# From okf enrich
 Enrich complete: 11 done, 0 errors | Tokens: 4850 total (3200 prompt + 1650 completion) | 1200 reasoning
+
+# From okf generate --enrich
+Enrichment complete: 11 enriched, 0 errors, 0 skipped | Tokens: 4850 total ...
 ```
 
-This shows total prompt tokens, completion tokens, and reasoning tokens (for reasoning models like DeepSeek). All concepts processed in a single `okf enrich` call are aggregated into one report.
+This shows total prompt tokens, completion tokens, and reasoning tokens (for reasoning models like DeepSeek). All concepts in a single run are aggregated into one report.
 
 ## Controlling token usage
 

@@ -1775,10 +1775,14 @@ Use <span class="sb">`fetch_series_v2`</span> instead — this method is depreca
 </table>
 <hr />
 <h2 id="token-usage">Token usage<a class="headerlink" href="#token-usage" title="Permanent link">&para;</a></h2>
-<p>Each enrich pass logs token consumption at completion:</p>
-<div class="highlight"><pre><span></span><code>Enrich complete: 11 done, 0 errors | Tokens: 4850 total (3200 prompt + 1650 completion) | 1200 reasoning
+<p>Both <code>okf enrich</code> and <code>okf generate --enrich</code> log token consumption at completion:</p>
+<div class="highlight"><pre><span></span><code># From okf enrich
+Enrich complete: 11 done, 0 errors | Tokens: 4850 total (3200 prompt + 1650 completion) | 1200 reasoning
+
+# From okf generate --enrich
+Enrichment complete: 11 enriched, 0 errors, 0 skipped | Tokens: 4850 total ...
 </code></pre></div>
-<p>This shows total prompt tokens, completion tokens, and reasoning tokens (for reasoning models like DeepSeek). All concepts processed in a single <code>okf enrich</code> call are aggregated into one report.</p>
+<p>This shows total prompt tokens, completion tokens, and reasoning tokens (for reasoning models like DeepSeek). All concepts in a single run are aggregated into one report.</p>
 <h2 id="controlling-token-usage">Controlling token usage<a class="headerlink" href="#controlling-token-usage" title="Permanent link">&para;</a></h2>
 <p>Set <code>llm.max_tokens</code> in <code>.okfconfig</code> to cap tokens per LLM call:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
