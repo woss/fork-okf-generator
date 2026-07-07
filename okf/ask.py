@@ -135,6 +135,13 @@ def main():
     # ── Single question mode ──
     context, results = _search_context(concepts, query_parts)
     if not context:
+        import os
+        debug = os.environ.get("OKF_ASK_DEBUG")
+        if debug:
+            tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
+            print(f"DEBUG: query_parts={query_parts}", file=sys.stderr)
+            print(f"DEBUG: tokens after stop={tokens}", file=sys.stderr)
+            print(f"DEBUG: bundle has {len(concepts)} concepts", file=sys.stderr)
         print(f"No relevant concepts found for: {' '.join(query_parts)}")
         print("Try different keywords or check the bundle is up to date.")
         sys.exit(1)
