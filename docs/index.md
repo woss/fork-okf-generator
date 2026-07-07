@@ -1,4 +1,9 @@
 # OKF Generator
+<p><strong>The knowledge layer for AI coding agents.</strong></p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/okf_banner.png?v=2" alt="okf-generator demo" width="700">
+</p>
 
 <p align="center">
   <a href="https://pypi.org/project/okf-generator/"><img src="https://img.shields.io/pypi/v/okf-generator?style=flat-square&label=PyPI" alt="PyPI"></a>
@@ -15,10 +20,6 @@
 
 <p align="center">
   <b>Parse any codebase into structured, agent-ready knowledge. High-velocity extraction across 17 languages — zero LLM required.</b>
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/okf_banner.png?v=2" alt="okf-generator demo" width="700">
 </p>
 
 okf-generator scans any codebase and generates an [OKF v0.1](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) conformant knowledge bundle — structured Markdown that AI agents can query instead of re-reading whole files. Zero-LLM extraction, fully offline, deterministic every run.
