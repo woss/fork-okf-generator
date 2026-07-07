@@ -1374,14 +1374,6 @@ def enrich_bundle(
     from okf.config import load as load_config
     _cfg = load_config()
 
-    # Resolve client for the requested mode
-    resolve_mode = "deep" if mode in ("deep", "full") else "security"
-    try:
-        client, r = _resolve_client(_cfg, resolve_mode)
-    except ImportError:
-        return
-    log.info(f"Enrich (mode={mode}): {r['provider']}/{r['model']} @ {r['base_url']}")
-
     from okf.pairs import load_bundle as _load_md
     raw = _load_md(bundle_dir)
 
@@ -1396,7 +1388,40 @@ def enrich_bundle(
         log.info("No concepts match the filter.")
         return
 
-    if mode == "security":
+    if mode == "base":
+        resolve_mode = "description"
+    elif mode in ("deep", "full"):
+        resolve_mode = "deep"
+    else:
+        resolve_mode = "security"
+    try:
+        client, r = _resolve_client(_cfg, resolve_mode)
+    except ImportError:
+        return
+    log.info(f"Enrich (mode={mode}): {r['provider']}/{r['model']} @ {r['base_url']}")
+
+    if mode == "base":
+        log.info(f"Base enrich for {len(raw)} concepts...")
+        all_map = {}
+        concepts = []
+        for r2 in raw:
+            c = Concept(type=r2.get("type", ""), title=r2.get("title", ""), resource=r2.get("resource", ""), signature=r2.get("signature", ""), description=r2.get("description", ""), concept_id=r2.get("concept_id", ""), docstring=r2.get("sections", {}).get("docstring", ""))
+            concepts.append(c)
+            all_map[c.concept_id] = c
+
+        done_seen = errors = 0
+        with ThreadPoolExecutor(max_workers=r["max_workers"]) as pool:
+            futures = {pool.submit(_enrich_one_base, c, client, r["model"], bundle_dir, all_map): c for c in concepts}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Enriching"):
+                try:
+                    future.result()
+                    done_seen += 1
+                except Exception as e:
+                    errors += 1
+                    log.debug(f"Enrich error: {e}")
+        log.info(f"Enrich complete: {done_seen} done, {errors} errors")
+
+    elif mode == "security":
         targets = []
         for r2 in raw:
             if r2.get("type") not in {"Function", "Class", "Method"}:
@@ -1467,6 +1492,14 @@ def _audit_one(c: Concept, client, model: str, source_dir: Path, path: Path) -> 
         if _patch_security_complexity(path, c.security, c.complexity):
             return "done"
     return "skipped"
+
+
+def _enrich_one_base(c: Concept, client, model: str, bundle_dir: Path, all_map: dict) -> None:
+    """Enrich a single concept with base mode and write it back."""
+    enriched = enrich_concept(c, client, model)
+    p = _concept_output_path(enriched, bundle_dir)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(render_concept(enriched, all_map), encoding="utf-8")
 
 
 def main():

@@ -63,8 +63,8 @@ import json
 from pathlib import Path
 
 CONFIG_FILES = [
-    Path.cwd() / ".okfconfig",
     Path.home() / ".config" / "okf" / "config.json",
+    Path.cwd() / ".okfconfig",
 ]
 
 BUILTIN_PROVIDERS = {
