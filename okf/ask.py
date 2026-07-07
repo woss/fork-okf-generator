@@ -29,11 +29,42 @@ STOP_WORDS = {
 }
 
 
-def _search_context(concepts, query_parts):
-    """Search bundle and build context string from top results."""
-    tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
+def _search_context(concepts, query_parts, llm_client=None, llm_model=None):
+    """Search bundle and build context string from top results.
+    
+    Uses LLM to extract search terms if available, otherwise falls back to stop word filtering.
+    """
+    query = " ".join(query_parts)
+    
+    # Try LLM-based term extraction first
+    tokens = None
+    if llm_client and llm_model:
+        try:
+            term_prompt = f"""Extract 2-5 key search terms from this question about a codebase.
+Return ONLY a JSON array of strings, no preamble, no markdown.
+Example: {{"terms": ["payment", "service", "api"]}}
+Question: {query}"""
+            resp = llm_client.chat.completions.create(
+                model=llm_model, messages=[{"role": "user", "content": term_prompt}],
+                max_tokens=100, temperature=0.1,
+            )
+            import json, re
+            raw = (resp.choices[0].message.content or "").strip()
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw).strip()
+            data = json.loads(raw)
+            terms = data.get("terms", [])
+            if terms:
+                tokens = [t for t in terms if isinstance(t, str) and t.strip()]
+        except Exception:
+            pass
+    
+    # Fallback: stop word filtering
     if not tokens:
-        tokens = query_parts[-3:]
+        tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
+        if not tokens:
+            tokens = query_parts[-3:]
+    
     results = search(concepts, tokens=tokens, limit=8)
     context_parts = []
     for c in results:
@@ -117,7 +148,7 @@ def main():
                 continue
             if q.lower() in ("/exit", "/quit", "exit", "quit"):
                 break
-            context, results = _search_context(concepts, q.split())
+            context, results = _search_context(concepts, q.split(), client, model)
             if not context:
                 print("  No relevant concepts found. Try different keywords.\n")
                 continue
@@ -133,15 +164,8 @@ def main():
         return
 
     # ── Single question mode ──
-    context, results = _search_context(concepts, query_parts)
+    context, results = _search_context(concepts, query_parts, client, model)
     if not context:
-        import os
-        debug = os.environ.get("OKF_ASK_DEBUG")
-        if debug:
-            tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
-            print(f"DEBUG: query_parts={query_parts}", file=sys.stderr)
-            print(f"DEBUG: tokens after stop={tokens}", file=sys.stderr)
-            print(f"DEBUG: bundle has {len(concepts)} concepts", file=sys.stderr)
         print(f"No relevant concepts found for: {' '.join(query_parts)}")
         print("Try different keywords or check the bundle is up to date.")
         sys.exit(1)
