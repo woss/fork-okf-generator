@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/banner.png" alt="okf-generator" width="700">
+  <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/okf-logo-light.svg" alt="okf-generator" width="500">
 </p>
 
 <p align="center">
