@@ -1,10 +1,10 @@
-# okf-generator
+# OKF Generator
+**The knowledge layer for AI coding agents.**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/UmairBaig8/okf-generator/main/docs/images/okf_banner.png?v=2" alt="okf-generator demo" width="700">
 </p>
 
-**The knowledge layer for AI coding agents.**
 
 okf-generator scans any codebase and generates an [OKF v0.1](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) conformant knowledge bundle — structured Markdown that AI agents can query instead of re-reading whole files. Zero-LLM extraction, fully offline, deterministic every run.
 
@@ -88,6 +88,6 @@ Yes. `okf generate` + `okf lookup` is a complete, zero-LLM workflow. Enrichment 
 
 ---
 
-<p style="text-align:center; color:var(--md-default-fg-color--light); font-size:0.85em;">
+<!-- <p style="text-align:center; color:var(--md-default-fg-color--light); font-size:0.85em;">
 © 2026 Umair Baig · MIT License · Not affiliated with Google · Implements <a href="https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md">OKF v0.1</a>
-</p>
+</p> -->
