@@ -16,6 +16,7 @@ Commands:
   okf serve      [dir] [--port] [--open]     Serve bundle + auto-open viz
   okf dashboard  <bundle> [--port] [--open]   Live bundle browser (FastAPI + interactive graph)
   okf mcp        <bundle> [--port] [--install] MCP server for AI agents. --install registers in opencode.json / claude_desktop_config.json
+  okf plugin     [list|install|uninstall]     Manage parser plugins
 
 Run `okf <command> --help` for per-command options.
 """
@@ -264,6 +265,7 @@ def main():
         print("  init            Interactive bundle setup wizard")
         print("  install         Set up agent integration (claude, opencode, copilot, cursor, windsurf, cline, mcp)")
         print("  mcp             Start MCP server (stdio or HTTP). Use --install to register in client configs")
+        print("  plugin          Manage parser plugins (list, install, uninstall)")
         sys.exit(0)
 
     cmd, rest = sys.argv[1], sys.argv[2:]
@@ -396,6 +398,10 @@ Examples:
 
     elif cmd == "mcp":
         from okf.mcp_server import main as _main
+        _main()
+
+    elif cmd == "plugin":
+        from okf.plugin import cli as _main
         _main()
 
     else:

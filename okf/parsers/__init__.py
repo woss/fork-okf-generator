@@ -1,6 +1,10 @@
-"""Parser registry — maps file extensions to parser instances via get_parser().
-Add new languages by importing the class and adding an entry to EXTENSION_MAP."""
+"""Parser registry — delegates to plugin system.
 
+For backward compatibility, retains imports and a ``get_parser()`` that
+forwards to :mod:`okf.plugin`.
+"""
+
+# Retained for backward compat — external code may import these directly.
 from okf.parsers.python import PythonParser
 from okf.parsers.javascript import JSTSParser
 from okf.parsers.go import GoParser
@@ -18,48 +22,12 @@ from okf.parsers.dart import DartParser
 from okf.parsers.scala import ScalaParser
 from okf.parsers.julia import JuliaParser
 
-# Extension → parser class mapping.
-# JS/TS is special-cased in get_parser() because it sets _path_ext for grammar selection.
-EXTENSION_MAP: dict[str, type] = {
-    ".py": PythonParser,
-    ".js": JSTSParser,
-    ".jsx": JSTSParser,
-    ".mjs": JSTSParser,
-    ".cjs": JSTSParser,
-    ".ts": JSTSParser,
-    ".tsx": JSTSParser,
-    ".go": GoParser,
-    ".java": JavaParser,
-    ".rs": RustParser,
-    ".rb": RubyParser,
-    ".c": CParser,
-    ".h": CParser,
-    ".cpp": CppParser,
-    ".cxx": CppParser,
-    ".cc": CppParser,
-    ".hpp": CppParser,
-    ".hh": CppParser,
-    ".cs": CSharpParser,
-    ".sql": SQLParser,
-    ".swift": SwiftParser,
-    ".kt": KotlinParser,
-    ".kts": KotlinParser,
-    ".php": PHPParser,
-    ".phtml": PHPParser,
-    ".dart": DartParser,
-    ".scala": ScalaParser,
-    ".sc": ScalaParser,
-    ".jl": JuliaParser,
-}
+# Deprecated — kept for third-party code that imports EXTENSION_MAP.
+# The plugin registry (okf.plugin.discover_parsers) is the canonical source.
+EXTENSION_MAP: dict[str, type] = {}
 
 
 def get_parser(ext: str):
-    """Return a parser instance for the given file extension, or None."""
-    cls = EXTENSION_MAP.get(ext)
-    if cls is None:
-        return None
-    if cls is JSTSParser and ext in {".ts", ".tsx"}:
-        p = cls()
-        p._path_ext = ext
-        return p
-    return cls()
+    """Return a parser instance for *ext* via the plugin registry."""
+    from okf.plugin import get_parser as _plugin_get
+    return _plugin_get(ext)
