@@ -3,11 +3,14 @@
 Asks a natural language question about your codebase. The bundle is searched
 for relevant concepts, then sent as context to the configured LLM for an answer.
 
+Without a question, enters interactive chat mode.
+
 Requires an LLM provider configured in .okfconfig (llm.api_key, llm.base_url).
 
 Usage:
   okf ask "how does the payment service work"
   okf ask "what dependencies does this project use" --bundle ./my_bundle
+  okf ask                          # interactive chat mode
 """
 
 import sys
@@ -21,14 +24,47 @@ STOP_WORDS = {
     "me", "my", "your", "all", "can", "will", "would", "could", "should",
     "has", "have", "had", "been", "being", "am", "are", "was", "were",
     "get", "got", "find", "show", "list", "tell", "describe", "explain",
-    "tell", "describe", "explain",
 }
 
 
+def _search_context(concepts, query_parts):
+    """Search bundle and build context string from top results."""
+    tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
+    if not tokens:
+        tokens = query_parts[-3:]
+    results = search(concepts, tokens=tokens, limit=8)
+    context_parts = []
+    for c in results:
+        sig = c.get("sections", {}).get("signature", "")
+        desc = c.get("description", "")
+        related = c.get("sections", {}).get("related", "")[:200]
+        entry = f"--- {c['type']}: {c['title']} ---\nFile: {c.get('resource', '')}\nDescription: {desc}\nSignature: {sig}\nRelated: {related}"
+        context_parts.append(entry)
+    return "\n\n".join(context_parts), results
+
+
+def _ask_llm(client, model, question, context, messages):
+    """Send question + context to LLM and return answer."""
+    system = f"""You are a codebase expert. Answer based on the context below.
+If the context doesn't contain enough information, say so.
+
+Context from the knowledge bundle:
+{context}"""
+    msgs = [{"role": "system", "content": system}]
+    for role, text in messages:
+        msgs.append({"role": role, "content": text})
+    msgs.append({"role": "user", "content": question})
+
+    resp = client.chat.completions.create(
+        model=model, messages=msgs, max_tokens=1000, temperature=0.1,
+    )
+    return (resp.choices[0].message.content or "").strip()
+
+
 def main():
-    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+    if len(sys.argv) >= 2 and sys.argv[1] in ("-h", "--help"):
         print(__doc__)
-        sys.exit(1 if len(sys.argv) < 2 else 0)
+        sys.exit(0)
 
     bundle_dir = Path("okf_bundle").resolve()
     query_parts = []
@@ -43,16 +79,11 @@ def main():
         elif not a.startswith("-"):
             query_parts.append(a)
 
-    if not query_parts:
-        print("Please provide a question.", file=sys.stderr)
-        sys.exit(1)
-
     if not bundle_dir.exists():
         print(f"Bundle not found: {bundle_dir}", file=sys.stderr)
         print("Generate one first: okf generate", file=sys.stderr)
         sys.exit(1)
 
-    # Load config and LLM client
     from okf.config import load as load_config, _get
     cfg = load_config()
     api_key = _get(cfg, "llm.api_key", "")
@@ -60,61 +91,57 @@ def main():
     model = _get(cfg, "llm.model", "local-model")
 
     if not api_key:
-        print("No LLM configured. Set llm.api_key in .okfconfig or OKF_API_KEY env.", file=sys.stderr)
+        print("No LLM configured. Set llm.api_key in .okfconfig.", file=sys.stderr)
         print("Without an LLM, use okf lookup instead for static search.", file=sys.stderr)
         sys.exit(1)
 
-    # Search bundle for relevant concepts
     from okf.lookup import load_bundle, search
     concepts = load_bundle(bundle_dir)
-    tokens = [t for t in query_parts if t.lower() not in STOP_WORDS]
-    if not tokens:
-        tokens = query_parts[-3:]
-    results = search(concepts, tokens=tokens, limit=8)
 
-    if not results:
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key, base_url=base_url)
+
+    # ── Interactive chat mode ──
+    if not query_parts:
+        print("OKF Ask — interactive chat. Type your questions or /exit.\n")
+        history = []
+        while True:
+            try:
+                q = input(">>> ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
+            if not q:
+                continue
+            if q.lower() in ("/exit", "/quit", "exit", "quit"):
+                break
+            context, results = _search_context(concepts, q.split())
+            if not context:
+                print("  No relevant concepts found. Try different keywords.\n")
+                continue
+            answer = _ask_llm(client, model, q, context, history)
+            history.append(("user", q))
+            history.append(("assistant", answer))
+            print(f"\n  {answer}\n")
+            print("Sources:")
+            for i, c in enumerate(results[:5], 1):
+                desc = c.get("description", "")[:60]
+                print(f"  [{i}] {c['type']}: {c['title']} — {c.get('resource', '')}")
+            print()
+        return
+
+    # ── Single question mode ──
+    context, results = _search_context(concepts, query_parts)
+    if not context:
         print(f"No relevant concepts found for: {' '.join(query_parts)}")
         print("Try different keywords or check the bundle is up to date.")
         sys.exit(1)
 
-    # Build context from concepts
-    context_parts = []
-    for c in results:
-        sig = c.get("sections", {}).get("signature", "")
-        desc = c.get("description", "")
-        related = c.get("sections", {}).get("related", "")[:200]
-        entry = f"--- {c['type']}: {c['title']} ---\nFile: {c.get('resource', '')}\nDescription: {desc}\nSignature: {sig}\nRelated: {related}"
-        context_parts.append(entry)
-    context = "\n\n".join(context_parts)
-
-    # Ask LLM
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key, base_url=base_url)
-
-    prompt = f"""You are a codebase expert. Answer the user's question based on the code concepts below.
-
-Context from the knowledge bundle:
-{context}
-
-Question: {' '.join(query_parts)}
-
-Answer concisely based only on the context above. If the context doesn't contain enough information, say so."""
-    try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
-            temperature=0.1,
-        )
-        answer = resp.choices[0].message.content or ""
-    except Exception as e:
-        print(f"LLM call failed: {e}", file=sys.stderr)
-        sys.exit(1)
-
+    answer = _ask_llm(client, model, " ".join(query_parts), context, [])
     print(f"\n  Q: {' '.join(query_parts)}\n")
     print(answer)
     print(f"\nSources:")
-    for i, c in enumerate(results, 1):
+    for i, c in enumerate(results[:10], 1):
         desc = c.get("description", "")[:80]
         desc_str = f" — {desc}" if desc else ""
         print(f"  [{i}] {c['type']}: {c['title']}{desc_str}")
