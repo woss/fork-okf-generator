@@ -16,6 +16,8 @@ Usage:
 import sys
 from pathlib import Path
 
+from okf.lookup import search
+
 STOP_WORDS = {
     "how", "does", "do", "is", "are", "was", "were", "the", "a", "an",
     "in", "on", "at", "to", "for", "of", "with", "by", "and", "or",
