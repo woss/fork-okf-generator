@@ -12,3 +12,4 @@ Deep dives into every feature of okf-generator.
 | [LLM Enrichment](enrichment.md) | Four enrichment tiers, multi-provider routing |
 | [CI/CD Guide](ci-cd.md) | GitHub Action, pre-commit hooks, automation |
 | [Visualization](visualization.md) | Static HTML viz + FastAPI dashboard |
+| [Plugin Development](plugins.md) | Build and publish parser/manifest plugins |

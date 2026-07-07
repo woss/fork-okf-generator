@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "okf-dotenv-plugin"
+version = "0.1.0"
+description = "OKF sample plugin — parses .env files as dependency concepts"
+authors = [{name = "OKF Generator"}]
+license = {text = "MIT"}
+requires-python = ">=3.10"
+
+[project.entry-points."okf.manifests"]
+dotenv = "okf_dotenv_plugin:ManifestHandler"
+
+[tool.hatch.build.targets.wheel]
+packages = ["okf_dotenv_plugin"]

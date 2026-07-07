@@ -89,6 +89,7 @@ nav:
       - Codebase Q&A: user-guide/ask.md
       - CI/CD Guide: user-guide/ci-cd.md
       - Visualization: user-guide/visualization.md
+      - Plugin Development: user-guide/plugins.md
   - Comparison: comparison.md
   - Troubleshooting: troubleshooting.md
   - Development:

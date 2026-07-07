@@ -251,10 +251,39 @@ def list_plugins() -> dict:
     for r in parser_list:
         r["extensions"] = sorted(r["extensions"])
 
-    manifest_list = sorted(
-        [{"file": k, "handler": v} for k, v in manifests.items()],
-        key=lambda x: x["file"],
-    )
+    # Build manifest list with human labels
+    _MANIFEST_LABELS = {
+        "parse_requirements_txt": "pip",
+        "parse_pyproject_toml": "Python",
+        "parse_package_json": "npm",
+        "parse_cargo_toml": "Cargo",
+        "parse_cargo_lock": "Cargo.lock",
+        "parse_yarn_lock": "Yarn",
+        "parse_pnpm_lock": "pnpm",
+        "parse_go_mod": "Go Module",
+        "parse_go_sum": "Go Sum",
+        "parse_poetry_lock": "Poetry",
+        "parse_composer_json": "Composer",
+        "parse_pom_xml": "Maven",
+        "parse_gemfile": "Gemfile",
+        "parse_build_gradle": "Gradle",
+        "parse_package_swift": "Swift Package",
+        "parse_project_clj": "Leiningen",
+        "parse_mix_exs": "Mix (Elixir)",
+        "parse_dockerfile": "Docker",
+        "parse_docker_compose": "Docker Compose",
+    }
+    # Reverse map: handler_path → label for built-in handlers
+    _BUILTIN_LABELS: dict[str, str] = {}
+    for fname, dotted_path in _BUILTIN_MANIFESTS.items():
+        func_name = dotted_path.rsplit(":", 1)[1]
+        label = _MANIFEST_LABELS.get(func_name, func_name.replace("parse_", "").replace("_", " ").title())
+        _BUILTIN_LABELS[dotted_path] = label
+
+    manifest_list = []
+    for fname, dotted_path in sorted(manifests.items(), key=lambda x: x[0]):
+        label = _BUILTIN_LABELS.get(dotted_path, dotted_path.split(":")[0].split(".")[-1])
+        manifest_list.append({"file": fname, "handler": dotted_path, "label": label})
 
     return {"parsers": parser_list, "manifests": manifest_list}
 
@@ -286,35 +315,12 @@ def cli():
             print(f"    {p['language']:15s} [{exts}]")
 
         print(f"\n  Manifests ({len(manifests)} files):\n")
-        # Group by handler for cleaner display
+        # Group by label for cleaner display
         from collections import defaultdict
-        by_handler: dict[str, list[str]] = defaultdict(list)
+        by_label: dict[str, list[str]] = defaultdict(list)
         for m in manifests:
-            by_handler[m["handler"]].append(m["file"])
-        _MANIFEST_LABELS = {
-            "parse_requirements_txt": "pip",
-            "parse_pyproject_toml": "Python (pip/poetry)",
-            "parse_package_json": "npm",
-            "parse_cargo_toml": "Cargo",
-            "parse_cargo_lock": "Cargo.lock",
-            "parse_yarn_lock": "Yarn",
-            "parse_pnpm_lock": "pnpm",
-            "parse_go_mod": "Go Module",
-            "parse_go_sum": "Go Sum",
-            "parse_poetry_lock": "Poetry",
-            "parse_composer_json": "Composer",
-            "parse_pom_xml": "Maven",
-            "parse_gemfile": "Gemfile",
-            "parse_build_gradle": "Gradle",
-            "parse_package_swift": "Swift Package",
-            "parse_project_clj": "Leiningen",
-            "parse_mix_exs": "Mix (Elixir)",
-            "parse_dockerfile": "Docker",
-            "parse_docker_compose": "Docker Compose",
-        }
-        for handler, files in sorted(by_handler.items()):
-            func_name = handler.rsplit(":", 1)[1]
-            label = _MANIFEST_LABELS.get(func_name, func_name.replace("parse_", "").replace("_", " "))
+            by_label[m["label"]].append(m["file"])
+        for label, files in sorted(by_label.items()):
             files_str = ", ".join(sorted(files))
             print(f"    {label:25s} [{files_str}]")
 
