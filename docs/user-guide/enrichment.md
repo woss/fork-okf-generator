@@ -9,24 +9,138 @@ okf-generator supports optional LLM-powered enrichment to enhance concept descri
 
 ```bash
 # Enrich at generate time
-okf generate ./my_project ./okf_bundle --enrich deep
+okf generate --enrich deep
 
 # Or enrich an existing bundle (no re-scan needed)
 okf enrich --mode full
 ```
 
+---
+
 ## Enrichment modes
 
-| Mode | What it does | Needs source body? |
-|------|-------------|:---:|
-| `base` | Improves descriptions + docstrings (Google-style) | ❌ |
-| `deep` | Adds usage examples, side effects, security notes, complexity estimates | ✅ |
-| `security` | Audits existing bundle for visible risk patterns only | ✅ |
-| `full` | All of the above + semantic related-links | ✅ |
+| Mode | What it does | Source body needed? | LLM call? |
+|------|-------------|:---:|:---:|
+| `base` | Improves descriptions + docstrings (Google-style) | ❌ | Yes |
+| `deep` | Adds usage examples, side effects, security notes, complexity estimates | ✅ | Yes |
+| `security` | Audits existing bundle for visible risk patterns only | ✅ | Yes |
+| `full` | All of the above + semantic related-links | ✅ | Yes |
+
+### `base` — Description improvement
+
+Improves existing descriptions and docstrings to Google-style format. Does **not** read the source body — only improves what's already in the bundle.
+
+**What gets enriched:**
+- `description` — rewritten to be more concise and informative
+- `docstring` — reformatted with consistent style
+- `design_pattern` — pattern detected from signature (e.g., "Factory", "Singleton")
+- `tags` — LLM-suggested semantic tags merged and deduplicated
+
+**Example — before:**
+```yaml
+description: "A function to add two numbers."
+```
+
+**Example — after:**
+```yaml
+description: "Adds two integers and returns the sum."
+tags:
+  - lang:python
+  - type:Function
+  - domain:math
+  - pattern:utility
+```
+
+### `deep` — Source-aware enrichment
+
+Reads the actual source body via `source_lines` to produce detailed fields.
+
+**What gets enriched:**
+- `usage_example` — realistic code example showing how to call the function/class
+- `side_effects` — describes any side effects (I/O, mutation, network calls)
+- `security` — flags visible risk patterns
+- `complexity` — estimated complexity (e.g., O(n), "moderate")
+
+**Example — after deep enrichment:**
+```yaml
+usage_example: |
+  connector = WorldBankConnector(api_key="sk-...")
+  df = connector.fetch_series("NY.GDP.MKTP.CD", start_date, end_date)
+side_effects:
+  - "Makes HTTP request to api.worldbank.org"
+  - "Raises requests.HTTPError on non-2xx response"
+complexity: O(n) where n = number of days in the date range
+```
+
+### `security` — Risk audit
+
+Audits concepts for visible risk patterns in the source body.
+
+**What gets enriched:**
+- `security` — risk assessment (e.g., "SQL injection risk: raw string concatenation detected")
+- `deprecation_notes` — deprecation notices found in docstring or decorators (deterministic, no LLM needed)
+
+**Example — after security audit:**
+```markdown
+## Security ⚠️ AI-estimated — verify manually
+- SQL injection risk: raw string concatenation detected in `query` parameter
+- No input validation on `user_id`
+
+## Deprecation
+Use `fetch_series_v2` instead — this method is deprecated.
+```
+
+### `full` — All passes
+
+Runs `base` + `deep` + `security`, plus a semantic related-links pass:
+
+- `related_semantic` — LLM-suggested cross-links beyond the call graph (e.g., conceptually similar functions in different modules)
+
+---
+
+## Fields reference
+
+| Field | Appears in | Description |
+|-------|-----------|-------------|
+| `description` | Frontmatter | Improved short description |
+| `docstring` | Body | Reformatted docstring |
+| `design_pattern` | Body | Detected design pattern |
+| `tags` | Frontmatter | Merged LLM-suggested tags |
+| `usage_example` | Body | Code example from deep pass |
+| `side_effects` | Body | Side effects from deep pass |
+| `complexity` | Body | Complexity estimate from deep pass |
+| `security` | Body | Risk patterns from security pass |
+| `deprecation_notes` | Body | Deprecation detection (deterministic) |
+| `related_semantic` | Body | AI-suggested cross-links from full pass |
+
+---
+
+## Resumable execution
+
+All modes are resumable — already-enriched concepts are skipped on re-run:
+
+```bash
+# Run base enrichment
+okf enrich --mode base
+
+# Interrupt mid-way (Ctrl+C), then resume — already-done concepts are skipped
+okf enrich --mode deep
+
+# Force re-run all concepts
+okf enrich --mode full --force
+```
+
+---
 
 ## Multi-provider routing
 
-Each enrich mode can use a different provider:
+Each enrich mode resolves its own provider independently via:
+
+```
+enrich.{mode}.{key} → providers.{name}.{key} → llm.{key}
+```
+
+Example — route cheap description work to a local model, security audits to Anthropic:
 
 ```json
 {
@@ -38,11 +152,9 @@ Each enrich mode can use a different provider:
 }
 ```
 
-Built-in provider presets: `local`, `openai`, `anthropic`, `deepseek`, `gemini`, `glm`, `ollama`, `lmstudio`, `openrouter`, `dashscope`, `minimax`.
+Built-in providers: `local`, `openai`, `anthropic`, `deepseek`, `gemini`, `ollama`, `lmstudio`, `openrouter`, `dashscope`, `minimax`.
 
 ## Configuration
-
-Set provider settings in `.okfconfig`:
 
 ```bash
 okf config llm.base_url=http://localhost:8080/v1
@@ -53,7 +165,7 @@ See [Configuration](../getting-started/configuration.md) for full details.
 
 ## How it works
 
-1. The enrichment pass runs after initial scanning
-2. Already-enriched concepts are skipped (resumable — interrupt and rerun freely)
+1. Enrichment runs after initial scanning
+2. Already-enriched concepts are skipped (resumable)
 3. Each mode resolves its provider independently via the cascade
-4. `body_extra` fields are appended to concept files
+4. Fields are appended to concept files — original data is preserved

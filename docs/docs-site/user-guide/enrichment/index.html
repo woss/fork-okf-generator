@@ -738,6 +738,78 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Enrichment modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-description-improvement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base — Description improvement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deep-source-aware-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deep — Source-aware enrichment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-risk-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security — Risk audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-all-passes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        full — All passes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fields reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resumable-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resumable execution
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1150,6 +1222,78 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Enrichment modes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-description-improvement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        base — Description improvement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deep-source-aware-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deep — Source-aware enrichment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-risk-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        security — Risk audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-all-passes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        full — All passes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fields-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fields reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resumable-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resumable execution
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1261,18 +1405,20 @@
 </div>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enrich at generate time</span>
-okf<span class="w"> </span>generate<span class="w"> </span>./my_project<span class="w"> </span>./okf_bundle<span class="w"> </span>--enrich<span class="w"> </span>deep
+okf<span class="w"> </span>generate<span class="w"> </span>--enrich<span class="w"> </span>deep
 
 <span class="c1"># Or enrich an existing bundle (no re-scan needed)</span>
 okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> </span>full
 </code></pre></div>
+<hr />
 <h2 id="enrichment-modes">Enrichment modes<a class="headerlink" href="#enrichment-modes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Mode</th>
 <th>What it does</th>
-<th style="text-align: center;">Needs source body?</th>
+<th style="text-align: center;">Source body needed?</th>
+<th style="text-align: center;">LLM call?</th>
 </tr>
 </thead>
 <tbody>
@@ -1280,26 +1426,161 @@ okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> 
 <td><code>base</code></td>
 <td>Improves descriptions + docstrings (Google-style)</td>
 <td style="text-align: center;">❌</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td><code>deep</code></td>
 <td>Adds usage examples, side effects, security notes, complexity estimates</td>
 <td style="text-align: center;">✅</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td><code>security</code></td>
 <td>Audits existing bundle for visible risk patterns only</td>
 <td style="text-align: center;">✅</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 <tr>
 <td><code>full</code></td>
 <td>All of the above + semantic related-links</td>
 <td style="text-align: center;">✅</td>
+<td style="text-align: center;">Yes</td>
 </tr>
 </tbody>
 </table>
+<h3 id="base-description-improvement"><code>base</code> — Description improvement<a class="headerlink" href="#base-description-improvement" title="Permanent link">&para;</a></h3>
+<p>Improves existing descriptions and docstrings to Google-style format. Does <strong>not</strong> read the source body — only improves what's already in the bundle.</p>
+<p><strong>What gets enriched:</strong>
+- <code>description</code> — rewritten to be more concise and informative
+- <code>docstring</code> — reformatted with consistent style
+- <code>design_pattern</code> — pattern detected from signature (e.g., "Factory", "Singleton")
+- <code>tags</code> — LLM-suggested semantic tags merged and deduplicated</p>
+<p><strong>Example — before:</strong>
+<div class="highlight"><pre><span></span><code><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;A</span><span class="nv"> </span><span class="s">function</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">add</span><span class="nv"> </span><span class="s">two</span><span class="nv"> </span><span class="s">numbers.&quot;</span>
+</code></pre></div></p>
+<p><strong>Example — after:</strong>
+<div class="highlight"><pre><span></span><code><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Adds</span><span class="nv"> </span><span class="s">two</span><span class="nv"> </span><span class="s">integers</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">returns</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">sum.&quot;</span>
+<span class="nt">tags</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lang:python</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">type:Function</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">domain:math</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pattern:utility</span>
+</code></pre></div></p>
+<h3 id="deep-source-aware-enrichment"><code>deep</code> — Source-aware enrichment<a class="headerlink" href="#deep-source-aware-enrichment" title="Permanent link">&para;</a></h3>
+<p>Reads the actual source body via <code>source_lines</code> to produce detailed fields.</p>
+<p><strong>What gets enriched:</strong>
+- <code>usage_example</code> — realistic code example showing how to call the function/class
+- <code>side_effects</code> — describes any side effects (I/O, mutation, network calls)
+- <code>security</code> — flags visible risk patterns
+- <code>complexity</code> — estimated complexity (e.g., O(n), "moderate")</p>
+<p><strong>Example — after deep enrichment:</strong>
+<div class="highlight"><pre><span></span><code><span class="nt">usage_example</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">  </span><span class="no">connector = WorldBankConnector(api_key=&quot;sk-...&quot;)</span>
+<span class="w">  </span><span class="no">df = connector.fetch_series(&quot;NY.GDP.MKTP.CD&quot;, start_date, end_date)</span>
+<span class="nt">side_effects</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Makes</span><span class="nv"> </span><span class="s">HTTP</span><span class="nv"> </span><span class="s">request</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">api.worldbank.org&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Raises</span><span class="nv"> </span><span class="s">requests.HTTPError</span><span class="nv"> </span><span class="s">on</span><span class="nv"> </span><span class="s">non-2xx</span><span class="nv"> </span><span class="s">response&quot;</span>
+<span class="nt">complexity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">O(n) where n = number of days in the date range</span>
+</code></pre></div></p>
+<h3 id="security-risk-audit"><code>security</code> — Risk audit<a class="headerlink" href="#security-risk-audit" title="Permanent link">&para;</a></h3>
+<p>Audits concepts for visible risk patterns in the source body.</p>
+<p><strong>What gets enriched:</strong>
+- <code>security</code> — risk assessment (e.g., "SQL injection risk: raw string concatenation detected")
+- <code>deprecation_notes</code> — deprecation notices found in docstring or decorators (deterministic, no LLM needed)</p>
+<p><strong>Example — after security audit:</strong>
+<div class="highlight"><pre><span></span><code><span class="gu">## Security ⚠️ AI-estimated — verify manually</span>
+<span class="k">-</span><span class="w"> </span>SQL injection risk: raw string concatenation detected in <span class="sb">`query`</span> parameter
+<span class="k">-</span><span class="w"> </span>No input validation on <span class="sb">`user_id`</span>
+
+<span class="gu">## Deprecation</span>
+Use <span class="sb">`fetch_series_v2`</span> instead — this method is deprecated.
+</code></pre></div></p>
+<h3 id="full-all-passes"><code>full</code> — All passes<a class="headerlink" href="#full-all-passes" title="Permanent link">&para;</a></h3>
+<p>Runs <code>base</code> + <code>deep</code> + <code>security</code>, plus a semantic related-links pass:</p>
+<ul>
+<li><code>related_semantic</code> — LLM-suggested cross-links beyond the call graph (e.g., conceptually similar functions in different modules)</li>
+</ul>
+<hr />
+<h2 id="fields-reference">Fields reference<a class="headerlink" href="#fields-reference" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Appears in</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>description</code></td>
+<td>Frontmatter</td>
+<td>Improved short description</td>
+</tr>
+<tr>
+<td><code>docstring</code></td>
+<td>Body</td>
+<td>Reformatted docstring</td>
+</tr>
+<tr>
+<td><code>design_pattern</code></td>
+<td>Body</td>
+<td>Detected design pattern</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>Frontmatter</td>
+<td>Merged LLM-suggested tags</td>
+</tr>
+<tr>
+<td><code>usage_example</code></td>
+<td>Body</td>
+<td>Code example from deep pass</td>
+</tr>
+<tr>
+<td><code>side_effects</code></td>
+<td>Body</td>
+<td>Side effects from deep pass</td>
+</tr>
+<tr>
+<td><code>complexity</code></td>
+<td>Body</td>
+<td>Complexity estimate from deep pass</td>
+</tr>
+<tr>
+<td><code>security</code></td>
+<td>Body</td>
+<td>Risk patterns from security pass</td>
+</tr>
+<tr>
+<td><code>deprecation_notes</code></td>
+<td>Body</td>
+<td>Deprecation detection (deterministic)</td>
+</tr>
+<tr>
+<td><code>related_semantic</code></td>
+<td>Body</td>
+<td>AI-suggested cross-links from full pass</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="resumable-execution">Resumable execution<a class="headerlink" href="#resumable-execution" title="Permanent link">&para;</a></h2>
+<p>All modes are resumable — already-enriched concepts are skipped on re-run:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run base enrichment</span>
+okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> </span>base
+
+<span class="c1"># Interrupt mid-way (Ctrl+C), then resume — already-done concepts are skipped</span>
+okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> </span>deep
+
+<span class="c1"># Force re-run all concepts</span>
+okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> </span>full<span class="w"> </span>--force
+</code></pre></div>
+<hr />
 <h2 id="multi-provider-routing">Multi-provider routing<a class="headerlink" href="#multi-provider-routing" title="Permanent link">&para;</a></h2>
-<p>Each enrich mode can use a different provider:</p>
+<p>Each enrich mode resolves its own provider independently via:</p>
+<div class="highlight"><pre><span></span><code>enrich.{mode}.{key} → providers.{name}.{key} → llm.{key}
+</code></pre></div>
+<p>Example — route cheap description work to a local model, security audits to Anthropic:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;enrich&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;local&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gemma-3-4b-it-qat:Q4_0&quot;</span><span class="w"> </span><span class="p">},</span>
@@ -1308,19 +1589,18 @@ okf<span class="w"> </span>enrich<span class="w"> </span>--mode<span class="w"> 
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Built-in provider presets: <code>local</code>, <code>openai</code>, <code>anthropic</code>, <code>deepseek</code>, <code>gemini</code>, <code>glm</code>, <code>ollama</code>, <code>lmstudio</code>, <code>openrouter</code>, <code>dashscope</code>, <code>minimax</code>.</p>
+<p>Built-in providers: <code>local</code>, <code>openai</code>, <code>anthropic</code>, <code>deepseek</code>, <code>gemini</code>, <code>ollama</code>, <code>lmstudio</code>, <code>openrouter</code>, <code>dashscope</code>, <code>minimax</code>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Set provider settings in <code>.okfconfig</code>:</p>
 <div class="highlight"><pre><span></span><code>okf<span class="w"> </span>config<span class="w"> </span>llm.base_url<span class="o">=</span>http://localhost:8080/v1
 okf<span class="w"> </span>config<span class="w"> </span>llm.api_key<span class="o">=</span>sk-...
 </code></pre></div>
 <p>See <a href="../../getting-started/configuration/">Configuration</a> for full details.</p>
 <h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <ol>
-<li>The enrichment pass runs after initial scanning</li>
-<li>Already-enriched concepts are skipped (resumable — interrupt and rerun freely)</li>
+<li>Enrichment runs after initial scanning</li>
+<li>Already-enriched concepts are skipped (resumable)</li>
 <li>Each mode resolves its provider independently via the cascade</li>
-<li><code>body_extra</code> fields are appended to concept files</li>
+<li>Fields are appended to concept files — original data is preserved</li>
 </ol>
 
 
