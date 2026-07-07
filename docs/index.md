@@ -1,42 +1,89 @@
 # okf-generator
 
-**Parse any codebase into structured, agent-ready knowledge. High-velocity extraction across 17 languages — zero LLM required.**
+**The knowledge layer for AI coding agents.**
+
+okf-generator scans any codebase and generates an [OKF v0.1](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) conformant knowledge bundle — structured Markdown that AI agents can query instead of re-reading whole files. Zero-LLM extraction, fully offline, deterministic every run.
+
+[![PyPI](https://img.shields.io/pypi/v/okf-generator?style=flat-square&label=PyPI)](https://pypi.org/project/okf-generator/)
+[![Python versions](https://img.shields.io/pypi/pyversions/okf-generator?style=flat-square)](https://pypi.org/project/okf-generator/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/UmairBaig8/okf-generator/blob/main/LICENSE)
+
+---
+
+## Quick Start
 
 ```bash
 pip install okf-generator
 okf generate ./my_project ./okf_bundle
-okf lookup --bundle ./okf_bundle FunctionName
+okf lookup WorldBankConnector
 ```
 
-## Why okf-generator?
+That's it — no API key, no vector DB, no config required to get value.
 
-- **Zero-LLM extraction** — Fully deterministic, offline. tree-sitter AST parsers extract every symbol with no API calls. Works in airgapped environments.
-- **Surgical token efficiency** — Agents retrieve one concept card (signature + params + callers) instead of reading entire files. 80-95% fewer tokens.
-- **Cross-linked knowledge** — Imports → dependencies, function calls → caller/callee resolved across all 17 languages. Multi-hop reasoning without grep.
+## Why
 
-## What you get
+Agents waste tokens re-reading entire files to find one function signature — 14,000+ tokens for a 600-line file. `okf lookup` returns the exact concept card — signature, params, callers, callees — in about 140 tokens.
 
-Every function, class, module, and dependency becomes a structured markdown file with YAML frontmatter:
+<div class="grid cards" markdown>
 
-```yaml
+- :material-lightning-bolt:{ .lg } **Zero-LLM extraction**
+  Deterministic, offline-capable. tree-sitter + AST parsers, no API calls required.
+  [→ How it works](getting-started/quick-start.md)
+
+- :material-graph:{ .lg } **17 languages, 17 manifest formats**
+  Python, JS/TS, Go, Java, Rust, Swift, Kotlin, Ruby, C/C++/C#, SQL, PHP, Dart, Scala, Julia.
+  [→ Language coverage](user-guide/languages-and-manifests.md)
+
+- :material-robot:{ .lg } **Works with your agent**
+  One command installs into Claude Code, Cursor, Copilot, Windsurf, Cline, OpenCode.
+  [→ Agent integration](user-guide/agent-integration.md)
+
+- :material-file-tree:{ .lg } **MCP server built in**
+  7 tools — lookup, get_concept, find_callers, and more — exposed over Model Context Protocol.
+  [→ MCP Server](user-guide/mcp-server.md)
+
+- :material-cog:{ .lg } **LLM enrichment, optional**
+  Four tiers — base, deep, security, full. Layer on top when you want it, never required.
+  [→ Enrichment guide](user-guide/enrichment.md)
+
+- :material-source-branch:{ .lg } **CI/CD ready**
+  Built-in GitHub Action posts PR comments with dependency impact analysis.
+  [→ CI/CD guide](user-guide/ci-cd.md)
+
+</div>
+
+## Where to Go Next
+
+| I want to... | Go to |
+|---|---|
+| Install and generate my first bundle | [Getting Started](getting-started/installation.md) |
+| See every CLI command | [CLI Reference](user-guide/cli-reference.md) |
+| Understand the bundle file format | [Bundle Format Reference](user-guide/bundle-format.md) |
+| Wire this into my agent | [Agent Integration](user-guide/agent-integration.md) |
+| Compare to RAG / reading whole files | [Comparison](comparison.md) |
+| Fix an error I'm hitting | [Troubleshooting](troubleshooting.md) |
+| See what changed between versions | [Changelog](changelog.md) |
+| Contribute a language parser | [Development](development/architecture.md) |
+
+## FAQ
+
+**Does this require an API key or internet connection?**
+No. Core extraction (`okf generate`) is fully offline and deterministic. LLM enrichment via `--enrich` is optional and only kicks in if you explicitly enable it.
+
+**How is this different from RAG or vector search?**
+RAG retrieves by semantic similarity — approximate, can miss exact symbols. `okf lookup` is exact-match against real functions, classes, and dependencies, with zero embedding infrastructure. Same result every run. Full comparison [here](comparison.md).
+
+**Does this work on monorepos or very large codebases?**
+Yes. Scanning is linear in file count; scope `okf generate` to a subdirectory if you only need part of the repo indexed.
+
+**Is the bundle safe to commit to git?**
+Yes — that's the intended workflow. Bundles are plain Markdown with YAML frontmatter, diff cleanly, and version alongside the code they describe.
+
+**Can I use this without any LLM at all, ever?**
+Yes. `okf generate` + `okf lookup` is a complete, zero-LLM workflow. Enrichment and training-pair synthesis are optional layers on top.
+
 ---
-type: Function
-title: slugify
-resource: utils.py
-signature: "def slugify(text: str, max_length: int = 80) -> str"
-tags: [lang:python, type:Function]
----
-```
 
-Searchable via CLI, browseable via interactive dashboard, consumable via MCP protocol — all from one `okf generate` command.
-
-## Next steps
-
-| Step | Command |
-|------|---------|
-| [Installation](getting-started/installation.md) | `pip install okf-generator` |
-| [Quick Start](getting-started/quick-start.md) | Generate your first bundle in 30 seconds |
-| [CLI Reference](user-guide/cli-reference.md) | Full command reference |
-| [Bundle Format](user-guide/bundle-format.md) | How the output is structured |
-| [Dashboard](user-guide/visualization.md) | Launch the live bundle browser |
-| [Changelog](changelog.md) | Release history |
+<p style="text-align:center; color:var(--md-default-fg-color--light); font-size:0.85em;">
+© 2026 Umair Baig · MIT License · Not affiliated with Google · Implements <a href="https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md">OKF v0.1</a>
+</p>

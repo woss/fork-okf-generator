@@ -323,10 +323,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-okf-generator" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why okf-generator?
+        Quick Start
       
     </span>
   </a>
@@ -334,10 +334,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-you-get" class="md-nav__link">
+  <a href="#why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What you get
+        Why
       
     </span>
   </a>
@@ -345,10 +345,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Where to Go Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FAQ
       
     </span>
   </a>
@@ -1067,10 +1078,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-okf-generator" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why okf-generator?
+        Quick Start
       
     </span>
   </a>
@@ -1078,10 +1089,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-you-get" class="md-nav__link">
+  <a href="#why" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What you get
+        Why
       
     </span>
   </a>
@@ -1089,10 +1100,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Where to Go Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FAQ
       
     </span>
   </a>
@@ -1120,63 +1142,112 @@
 
 
 <h1 id="okf-generator">okf-generator<a class="headerlink" href="#okf-generator" title="Permanent link">&para;</a></h1>
-<p><strong>Parse any codebase into structured, agent-ready knowledge. High-velocity extraction across 17 languages — zero LLM required.</strong></p>
+<p><strong>The knowledge layer for AI coding agents.</strong></p>
+<p>okf-generator scans any codebase and generates an <a href="https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md">OKF v0.1</a> conformant knowledge bundle — structured Markdown that AI agents can query instead of re-reading whole files. Zero-LLM extraction, fully offline, deterministic every run.</p>
+<p><a href="https://pypi.org/project/okf-generator/"><img alt="PyPI" src="https://img.shields.io/pypi/v/okf-generator?style=flat-square&amp;label=PyPI" /></a>
+<a href="https://pypi.org/project/okf-generator/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/okf-generator?style=flat-square" /></a>
+<a href="https://github.com/UmairBaig8/okf-generator/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" /></a></p>
+<hr />
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>okf-generator
 okf<span class="w"> </span>generate<span class="w"> </span>./my_project<span class="w"> </span>./okf_bundle
-okf<span class="w"> </span>lookup<span class="w"> </span>--bundle<span class="w"> </span>./okf_bundle<span class="w"> </span>FunctionName
+okf<span class="w"> </span>lookup<span class="w"> </span>WorldBankConnector
 </code></pre></div>
-<h2 id="why-okf-generator">Why okf-generator?<a class="headerlink" href="#why-okf-generator" title="Permanent link">&para;</a></h2>
+<p>That's it — no API key, no vector DB, no config required to get value.</p>
+<h2 id="why">Why<a class="headerlink" href="#why" title="Permanent link">&para;</a></h2>
+<p>Agents waste tokens re-reading entire files to find one function signature — 14,000+ tokens for a 600-line file. <code>okf lookup</code> returns the exact concept card — signature, params, callers, callees — in about 140 tokens.</p>
+<div class="grid cards">
 <ul>
-<li><strong>Zero-LLM extraction</strong> — Fully deterministic, offline. tree-sitter AST parsers extract every symbol with no API calls. Works in airgapped environments.</li>
-<li><strong>Surgical token efficiency</strong> — Agents retrieve one concept card (signature + params + callers) instead of reading entire files. 80-95% fewer tokens.</li>
-<li><strong>Cross-linked knowledge</strong> — Imports → dependencies, function calls → caller/callee resolved across all 17 languages. Multi-hop reasoning without grep.</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11 15H6l7-14v8h5l-7 14z"/></svg></span> <strong>Zero-LLM extraction</strong>
+  Deterministic, offline-capable. tree-sitter + AST parsers, no API calls required.
+  <a href="getting-started/quick-start/">→ How it works</a></p>
+</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.5 17c-.13 0-.26 0-.39.04l-1.61-3.25a2.5 2.5 0 0 0-1.75-4.29c-.13 0-.25 0-.39.04l-1.63-3.25c.48-.45.77-1.08.77-1.79a2.5 2.5 0 0 0-5 0c0 .71.29 1.34.76 1.79L8.64 9.54c-.14-.04-.26-.04-.39-.04a2.5 2.5 0 0 0-1.75 4.29l-1.61 3.25C4.76 17 4.63 17 4.5 17a2.5 2.5 0 0 0 0 5A2.5 2.5 0 0 0 7 19.5c0-.7-.29-1.34-.76-1.79l1.62-3.25c.14.04.26.04.39.04s.25 0 .39-.04l1.63 3.25c-.47.45-.77 1.09-.77 1.79a2.5 2.5 0 0 0 5 0A2.5 2.5 0 0 0 12 17c-.13 0-.26 0-.39.04L10 13.79c.46-.45.75-1.08.75-1.79s-.29-1.34-.75-1.79l1.61-3.25c.13.04.26.04.39.04s.26 0 .39-.04L14 10.21c-.45.45-.75 1.09-.75 1.79a2.5 2.5 0 0 0 2.5 2.5c.13 0 .25 0 .39-.04l1.63 3.25c-.47.45-.77 1.09-.77 1.79a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0-2.5-2.5"/></svg></span> <strong>17 languages, 17 manifest formats</strong>
+  Python, JS/TS, Go, Java, Rust, Swift, Kotlin, Ruby, C/C++/C#, SQL, PHP, Dart, Scala, Julia.
+  <a href="user-guide/languages-and-manifests/">→ Language coverage</a></p>
+</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/></svg></span> <strong>Works with your agent</strong>
+  One command installs into Claude Code, Cursor, Copilot, Windsurf, Cline, OpenCode.
+  <a href="user-guide/agent-integration/">→ Agent integration</a></p>
+</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 3h6v4H3zm12 7h6v4h-6zm0 7h6v4h-6zm-2-4H7v5h6v2H5V9h2v2h6z"/></svg></span> <strong>MCP server built in</strong>
+  7 tools — lookup, get_concept, find_callers, and more — exposed over Model Context Protocol.
+  <a href="user-guide/mcp-server/">→ MCP Server</a></p>
+</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97s-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1s.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64z"/></svg></span> <strong>LLM enrichment, optional</strong>
+  Four tiers — base, deep, security, full. Layer on top when you want it, never required.
+  <a href="user-guide/enrichment/">→ Enrichment guide</a></p>
+</li>
+<li>
+<p><span class="twemoji lg"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg></span> <strong>CI/CD ready</strong>
+  Built-in GitHub Action posts PR comments with dependency impact analysis.
+  <a href="user-guide/ci-cd/">→ CI/CD guide</a></p>
+</li>
 </ul>
-<h2 id="what-you-get">What you get<a class="headerlink" href="#what-you-get" title="Permanent link">&para;</a></h2>
-<p>Every function, class, module, and dependency becomes a structured markdown file with YAML frontmatter:</p>
-<div class="highlight"><pre><span></span><code><span class="nn">---</span>
-<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Function</span>
-<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">slugify</span>
-<span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">utils.py</span>
-<span class="nt">signature</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;def</span><span class="nv"> </span><span class="s">slugify(text:</span><span class="nv"> </span><span class="s">str,</span><span class="nv"> </span><span class="s">max_length:</span><span class="nv"> </span><span class="s">int</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">80)</span><span class="nv"> </span><span class="s">-&gt;</span><span class="nv"> </span><span class="s">str&quot;</span>
-<span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">lang</span><span class="p p-Indicator">:</span><span class="nv">python</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">type</span><span class="p p-Indicator">:</span><span class="nv">Function</span><span class="p p-Indicator">]</span>
-<span class="nn">---</span>
-</code></pre></div>
-<p>Searchable via CLI, browseable via interactive dashboard, consumable via MCP protocol — all from one <code>okf generate</code> command.</p>
-<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+</div>
+<h2 id="where-to-go-next">Where to Go Next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Step</th>
-<th>Command</th>
+<th>I want to...</th>
+<th>Go to</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="getting-started/installation/">Installation</a></td>
-<td><code>pip install okf-generator</code></td>
+<td>Install and generate my first bundle</td>
+<td><a href="getting-started/installation/">Getting Started</a></td>
 </tr>
 <tr>
-<td><a href="getting-started/quick-start/">Quick Start</a></td>
-<td>Generate your first bundle in 30 seconds</td>
-</tr>
-<tr>
+<td>See every CLI command</td>
 <td><a href="user-guide/cli-reference/">CLI Reference</a></td>
-<td>Full command reference</td>
 </tr>
 <tr>
-<td><a href="user-guide/bundle-format/">Bundle Format</a></td>
-<td>How the output is structured</td>
+<td>Understand the bundle file format</td>
+<td><a href="user-guide/bundle-format/">Bundle Format Reference</a></td>
 </tr>
 <tr>
-<td><a href="user-guide/visualization/">Dashboard</a></td>
-<td>Launch the live bundle browser</td>
+<td>Wire this into my agent</td>
+<td><a href="user-guide/agent-integration/">Agent Integration</a></td>
 </tr>
 <tr>
+<td>Compare to RAG / reading whole files</td>
+<td><a href="comparison/">Comparison</a></td>
+</tr>
+<tr>
+<td>Fix an error I'm hitting</td>
+<td><a href="troubleshooting/">Troubleshooting</a></td>
+</tr>
+<tr>
+<td>See what changed between versions</td>
 <td><a href="changelog/">Changelog</a></td>
-<td>Release history</td>
+</tr>
+<tr>
+<td>Contribute a language parser</td>
+<td><a href="development/architecture/">Development</a></td>
 </tr>
 </tbody>
 </table>
+<h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h2>
+<p><strong>Does this require an API key or internet connection?</strong>
+No. Core extraction (<code>okf generate</code>) is fully offline and deterministic. LLM enrichment via <code>--enrich</code> is optional and only kicks in if you explicitly enable it.</p>
+<p><strong>How is this different from RAG or vector search?</strong>
+RAG retrieves by semantic similarity — approximate, can miss exact symbols. <code>okf lookup</code> is exact-match against real functions, classes, and dependencies, with zero embedding infrastructure. Same result every run. Full comparison <a href="comparison/">here</a>.</p>
+<p><strong>Does this work on monorepos or very large codebases?</strong>
+Yes. Scanning is linear in file count; scope <code>okf generate</code> to a subdirectory if you only need part of the repo indexed.</p>
+<p><strong>Is the bundle safe to commit to git?</strong>
+Yes — that's the intended workflow. Bundles are plain Markdown with YAML frontmatter, diff cleanly, and version alongside the code they describe.</p>
+<p><strong>Can I use this without any LLM at all, ever?</strong>
+Yes. <code>okf generate</code> + <code>okf lookup</code> is a complete, zero-LLM workflow. Enrichment and training-pair synthesis are optional layers on top.</p>
+<hr />
+<p style="text-align:center; color:var(--md-default-fg-color--light); font-size:0.85em;">
+© 2026 Umair Baig · MIT License · Not affiliated with Google · Implements <a href="https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md">OKF v0.1</a>
+</p>
 
 
 
