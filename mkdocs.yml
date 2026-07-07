@@ -26,6 +26,8 @@ theme:
     - navigation.tracking
     - navigation.sections
     - navigation.top
+    - navigation.path
+    - header.autohide
     - search.suggest
     - search.highlight
     - search.share
