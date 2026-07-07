@@ -1597,6 +1597,34 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0141-2026-07-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.41 — 2026-07-08
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.41 — 2026-07-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1612,17 +1640,6 @@
     <span class="md-ellipsis">
       
         Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#planned" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Planned
       
     </span>
   </a>
@@ -3203,6 +3220,34 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#0141-2026-07-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.41 — 2026-07-08
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.41 — 2026-07-08">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3218,17 +3263,6 @@
     <span class="md-ellipsis">
       
         Changed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#planned" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Planned
       
     </span>
   </a>
@@ -4646,25 +4680,33 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><code>GoParser</code> refactored: <code>_prev_comment</code> extracted once per node to avoid <code>UnboundLocalError</code> with new declaration types.</li>
 </ul>
 <hr />
-<h2 id="unreleased"><a href="https://github.com/UmairBaig8/okf-generator/compare/v0.1.40...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="unreleased"><a href="https://github.com/UmairBaig8/okf-generator/compare/v0.1.41...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="planned">Planned<a class="headerlink" href="#planned" title="Permanent link">&para;</a></h3>
+<ul>
+<li>TypeScript generics parser — extract <code>Array&lt;T&gt;</code>, <code>Map&lt;K,V&gt;</code> type parameters from TS/TSX</li>
+</ul>
+<hr />
+<h2 id="0141-2026-07-08"><a href="https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.41">0.1.41</a> — 2026-07-08<a class="headerlink" href="#0141-2026-07-08" title="Permanent link">&para;</a></h2>
 <h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Plugin system</strong> — <code>okf/plugin.py</code> with <code>discover_parsers()</code> via <code>importlib.metadata.entry_points</code>. Built-in parsers registered as <code>[project.entry-points."okf.parsers"]</code> in <code>pyproject.toml</code>. External plugins auto-discovered at runtime — <code>pip install</code> → <code>okf plugin list</code> → <code>okf generate</code> picks it up. (<code>sample-plugins/okf-dotenv-plugin/</code>)</li>
+<li><strong>Manifest plugin support</strong> — <code>okf.manifests</code> entry point group for custom dependency formats. External manifest plugins detected during <code>okf generate</code>. <code>is_manifest_file()</code> checks plugin registry before hidden-file filter so <code>.env</code> files are no longer skipped.</li>
 <li><strong>MCP server spec compliance</strong> — <code>tools/list</code> and <code>resources/list</code> now wrap results in <code>{"tools": [...]}</code> / <code>{"resources": [...]}</code> per MCP protocol spec. Fixes OpenCode/Cursor integration.</li>
+<li><strong>4 new MCP tools</strong> — <code>find_callees</code> (forward call-graph), <code>search_by_tag</code> (filter by tag prefix), <code>get_related</code> (related/referenced concepts), <code>get_manifest_source</code> (manifest file info for dependencies). Total MCP tools: 7 → 11.</li>
+<li><strong>okf mcp --install</strong> — Registers MCP server in OpenCode (<code>opencode.json</code>) and Claude Desktop (<code>claude_desktop_config.json</code>) configs automatically.</li>
 <li><strong>okf ask</strong> — LLM-powered Q&amp;A over bundles. Supports interactive chat mode (no args) and single question mode. LLM term extraction for better search. Token usage tracking in responses. (<code>okf ask &lt;question&gt;</code>)</li>
 <li><strong>Token usage tracking</strong> — All LLM calls (enrich, ask) now report prompt/completion/total/reasoning tokens. Resets per <code>okf generate --enrich</code> run.</li>
 <li><strong>Configurable <code>max_tokens</code></strong> — <code>llm.max_tokens</code> in config controls all LLM calls (default 2000).</li>
 <li><strong>Security audit token usage</strong> — <code>okf enrich --mode security</code> now tracks and reports token usage.</li>
 <li><strong>Enrich field preservation</strong> — Enrichment preserves existing fields (tags, params, returns, related) instead of dropping them.</li>
+<li><strong>Agent install improvements</strong> — Fixed copilot self-copy bug. <code>_agent_rules()</code> and <code>_copilot_default()</code> now mention MCP as preferred path. <code>okf install mcp</code> shortcut added.</li>
 </ul>
 <h3 id="changed_5">Changed<a class="headerlink" href="#changed_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Enrich mode fix</strong> — <code>_enrich_mode</code> no longer defaults to <code>"base"</code> unconditionally. Only activates when <code>--enrich</code> flag is passed or <code>llm.enabled</code> is <code>true</code> in config.</li>
 <li><strong>okf ask output</strong> — Shows source list instead of concept count. Strips double fences from signatures, cleans param backticks.</li>
+<li><strong>Docs site restructured</strong> — Navigation regrouped into Core Concepts, Using OKF, Integration, Extending, Reference sections.</li>
 <li><strong>Test improvements</strong> — MCP tests unwrap new <code>{"tools"|"resources": [...]}</code> format. Config tests tolerate global <code>~/.config/okf/config.json</code>.</li>
-</ul>
-<h3 id="planned">Planned<a class="headerlink" href="#planned" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Plugin system</strong> — <code>okf plugin install &lt;lang&gt;</code> to add parsers without modifying core</li>
 </ul>
 <hr />
 <h2 id="0140-2026-07-07"><a href="https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.40">0.1.40</a> — 2026-07-07<a class="headerlink" href="#0140-2026-07-07" title="Permanent link">&para;</a></h2>

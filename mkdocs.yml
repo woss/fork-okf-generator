@@ -44,7 +44,7 @@ plugins:
 extra:
   version:
     provider: mike
-  announce: 🚀 v0.1.39 shipped — PHP/Dart/Scala/Julia parsers + Web Dashboard
+  announce: 🚀 v0.1.41 shipped — Plugin system, 11 MCP tools, okf mcp --install, LLM-powered Q&A
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/UmairBaig8/okf-generator

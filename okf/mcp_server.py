@@ -480,7 +480,8 @@ class BundleMCPServer:
 
 def _install_mcp_config(bundle_dir: Path):
     """Register MCP server in detected client configs."""
-    import json, os
+    import json
+    import shutil
     abs_bundle = str(bundle_dir.resolve())
     okf_path = shutil.which("okf") or ""
     if not okf_path:

@@ -93,21 +93,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- TypeScript generics parser — extract `Array<T>`, `Map<K,V>` type parameters from TS/TSX
+
+---
+
+## [0.1.41] — 2026-07-08
+
 ### Added
+- **Plugin system** — `okf/plugin.py` with `discover_parsers()` via `importlib.metadata.entry_points`. Built-in parsers registered as `[project.entry-points."okf.parsers"]` in `pyproject.toml`. External plugins auto-discovered at runtime — `pip install` → `okf plugin list` → `okf generate` picks it up. (`sample-plugins/okf-dotenv-plugin/`)
+- **Manifest plugin support** — `okf.manifests` entry point group for custom dependency formats. External manifest plugins detected during `okf generate`. `is_manifest_file()` checks plugin registry before hidden-file filter so `.env` files are no longer skipped.
 - **MCP server spec compliance** — `tools/list` and `resources/list` now wrap results in `{"tools": [...]}` / `{"resources": [...]}` per MCP protocol spec. Fixes OpenCode/Cursor integration.
+- **4 new MCP tools** — `find_callees` (forward call-graph), `search_by_tag` (filter by tag prefix), `get_related` (related/referenced concepts), `get_manifest_source` (manifest file info for dependencies). Total MCP tools: 7 → 11.
+- **okf mcp --install** — Registers MCP server in OpenCode (`opencode.json`) and Claude Desktop (`claude_desktop_config.json`) configs automatically.
 - **okf ask** — LLM-powered Q&A over bundles. Supports interactive chat mode (no args) and single question mode. LLM term extraction for better search. Token usage tracking in responses. (`okf ask <question>`)
 - **Token usage tracking** — All LLM calls (enrich, ask) now report prompt/completion/total/reasoning tokens. Resets per `okf generate --enrich` run.
 - **Configurable `max_tokens`** — `llm.max_tokens` in config controls all LLM calls (default 2000).
 - **Security audit token usage** — `okf enrich --mode security` now tracks and reports token usage.
 - **Enrich field preservation** — Enrichment preserves existing fields (tags, params, returns, related) instead of dropping them.
+- **Agent install improvements** — Fixed copilot self-copy bug. `_agent_rules()` and `_copilot_default()` now mention MCP as preferred path. `okf install mcp` shortcut added.
 
 ### Changed
 - **Enrich mode fix** — `_enrich_mode` no longer defaults to `"base"` unconditionally. Only activates when `--enrich` flag is passed or `llm.enabled` is `true` in config.
 - **okf ask output** — Shows source list instead of concept count. Strips double fences from signatures, cleans param backticks.
+- **Docs site restructured** — Navigation regrouped into Core Concepts, Using OKF, Integration, Extending, Reference sections.
 - **Test improvements** — MCP tests unwrap new `{"tools"|"resources": [...]}` format. Config tests tolerate global `~/.config/okf/config.json`.
-
-### Planned
-- **Plugin system** — `okf plugin install <lang>` to add parsers without modifying core
 
 ---
 
@@ -600,7 +610,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenCode integration guide
 - 32 passing tests
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.40...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.41...HEAD
+[0.1.41]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.41
 [0.1.40]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.40
 [0.1.39]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.39
 [0.1.38]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.38

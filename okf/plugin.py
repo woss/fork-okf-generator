@@ -213,7 +213,6 @@ def _load_entry_points(group: str, namespace: str, target: dict, expand_fn) -> N
 
 def get_parser(ext: str) -> ParserPlugin | None:
     """Return a parser instance for *ext* (e.g. ``.py``), or ``None``."""
-    import okf.parsers.javascript as jsts
     registry = discover_parsers()
     cls = registry.get(ext)
     if cls is None:
