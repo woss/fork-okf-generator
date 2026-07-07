@@ -78,6 +78,7 @@ nav:
   - Comparison: comparison.md
   - Troubleshooting: troubleshooting.md
   - Development:
+      - Architecture Overview: development/architecture.md
       - Adding a Language: development.md
       - Contributing: development/contributing.md
   - API Reference: user-guide/python-api.md
