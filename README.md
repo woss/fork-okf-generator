@@ -52,11 +52,14 @@ okf generate
 # Or specify explicitly
 okf generate ./my_project ./okf_bundle
 
-# Explore as an interactive HTML dashboard
-okf dashboard ./okf_bundle --open
-
 # Look up any concept in milliseconds
 okf lookup WorldBankConnector
+
+# Ask questions about your codebase (requires LLM)
+okf ask "how does the payment service work"
+
+# Explore as an interactive HTML dashboard
+okf dashboard ./okf_bundle --open
 ```
 
 ---

@@ -6,6 +6,7 @@ Commands:
   okf enrich     [--bundle <bundle_dir>] [--mode base|deep|security|full] [--src <path>]
                                                Enrich an EXISTING bundle (default: ./okf_bundle)
   okf lookup     <query> [options]            Look up a concept in a bundle
+  okf ask        <question>                  AI-powered Q&A about your codebase (requires LLM)
   okf diff       <old> <new>                  Diff two bundles (added/removed/changed)
   okf pairs      <bundle_dir> [output_file]  Convert bundle to training pairs
   okf summarize  <bundle_dir>                Regenerate SUMMARY.md only
@@ -323,6 +324,10 @@ Examples:
                 if "api_key" in k and v:
                     v = v[:8] + "..." if len(v) > 8 else "***"
                 print(f"  {k:20s} {v}")
+    elif cmd in ("ask", "query"):
+        from okf.ask import main as _main
+        _main()
+
     elif cmd == "lookup":
         from okf.lookup import main as _main
         _main()

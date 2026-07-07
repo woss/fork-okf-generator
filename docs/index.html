@@ -410,7 +410,7 @@
           <div class="step-num" aria-hidden="true">2</div>
           <h3>Retrieve any concept</h3>
           <p>Exact-symbol lookup returns full concept cards — signature, parameters, callers, callees — in milliseconds. Zero embeddings, zero RAG.</p>
-          <div class="step-cmd"><span class="cmd-text">okf lookup WorldBankConnector</span><button class="copy-mini" onclick="copyMini(this)" data-text="okf lookup WorldBankConnector" aria-label="Copy command"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+          <div class="step-cmd"><span class="cmd-text">okf ask "how does the payment service work"</span><button class="copy-mini" onclick="copyMini(this)" data-text="okf ask \"how does the payment service work\"" aria-label="Copy command"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
         </div>
         <div class="step reveal">
           <div class="step-num" aria-hidden="true">3</div>
@@ -598,6 +598,7 @@
           <tbody>
             <tr><td>generate</td><td>okf generate [src] [out] [--enrich]</td><td>Scan codebase (auto-detects project root if src omitted)</td></tr>
             <tr><td>lookup</td><td>okf lookup &lt;query&gt; [--type] [--json]</td><td>Instant exact-symbol concept retrieval</td></tr>
+<tr><td>ask</td><td>okf ask &lt;question&gt;</td><td>AI-powered Q&A about your codebase (requires LLM)</td></tr>
             <tr><td>enrich</td><td>okf enrich &lt;bundle&gt; [--mode] [--src]</td><td>LLM-enhance an existing bundle</td></tr>
             <tr><td>diff</td><td>okf diff &lt;old&gt; &lt;new&gt; [--impact]</td><td>Compare two bundles, show impact</td></tr>
             <tr><td>visualize</td><td>okf visualize &lt;bundle&gt; [out.html]</td><td>Generate interactive D3 graph</td></tr>

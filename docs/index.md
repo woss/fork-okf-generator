@@ -35,6 +35,7 @@ okf-generator scans any codebase and generates an [OKF v0.1](https://github.com/
 pip install okf-generator
 cd my_project && okf generate
 okf lookup WorldBankConnector
+okf ask "how does the payment service work"
 ```
 
 That's it — no API key, no vector DB, no config required to get value.
