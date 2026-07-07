@@ -113,4 +113,10 @@ Answer concisely based only on the context above. If the context doesn't contain
 
     print(f"\n  Q: {' '.join(query_parts)}\n")
     print(answer)
-    print(f"\n  Concepts consulted: {len(results)} — use okf lookup for full detail on any of them.")
+    print(f"\nSources:")
+    for i, c in enumerate(results, 1):
+        desc = c.get("description", "")[:80]
+        desc_str = f" — {desc}" if desc else ""
+        print(f"  [{i}] {c['type']}: {c['title']}{desc_str}")
+        print(f"      {c.get('resource', '')}")
+    print(f"\n  Run okf lookup <Name> for full detail.")
