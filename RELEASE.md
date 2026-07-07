@@ -79,6 +79,13 @@ vim okf/__init__.py         # __version__ = "x.y.z"
 - **docs/index.html (landing page)**: If a prominent feature was added (new language, new manifest format, major UX improvement), add it to the hero section feature list, the feature grid, or the comparison table. The landing page must highlight every major capability. Also update: (a) language counts (search `N languages`), (b) CLI reference table (search `okf ` in table rows), (c) feature cards if adding new capabilities. Version badge auto-fetches from PyPI — no manual version update needed.
 - **TEST.md**: If new CLI commands or flags were added, add corresponding test phases.
 - **RELEASE.md**: If release process changed, update this file.
+- **mkdocs docs-site**: If docs content changed, rebuild and commit the static site:
+  ```bash
+  mkdocs build
+  rm -rf docs/docs-site && cp -r build/docs-site docs/docs-site
+  git add docs/docs-site && git commit -m "docs: rebuild docs-site" && git push
+  ```
+  The docs-site is served at `https://umairbaig8.github.io/okf-generator/docs-site/`.
 
 ### 4. Update fixtures (if new languages/features)
 
