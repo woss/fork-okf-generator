@@ -655,7 +655,7 @@ function renderDetail(c) {
 
   qs('source-body').querySelector('pre').textContent = c.raw || 'No source available.';
   switchDetailTab('dmain', qs('dtab-dmain'));
-  renderSubgraph(c);
+  // Subgraph is rendered lazily when user clicks the Subgraph tab
 }
 
 function renderSubgraph(c) {
@@ -760,7 +760,14 @@ function switchDetailTab(name, btn) {
   btn.classList.add('active'); btn.setAttribute('aria-selected','true');
   document.querySelectorAll('#detail-panel .dtab-content').forEach(function(t) { t.classList.remove('active'); });
   qs('dtab-' + name).classList.add('active');
-  if (name === 'dgraph' && graphInstance) setTimeout(function() { graphInstance.fit(); }, 100);
+  if (name === 'dgraph') {
+    var c = conceptCache[currentId];
+    if (c) {
+      if (graphInstance) graphInstance.destroy();
+      renderSubgraph(c);
+      setTimeout(function() { if (graphInstance) graphInstance.fit(); }, 200);
+    }
+  }
 }
 
 function closeDetail() {
