@@ -170,7 +170,7 @@ def _frontmatter(concept: Concept) -> str:
     return "---\n" + yaml.dump(fm, default_flow_style=False, allow_unicode=True) + "---\n"
 
 
-def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
+def _body(concept: Concept, all_concepts: dict[str, Concept], source_dir: Path | None = None) -> str:
     lines = [f"# {concept.title}\n"]
 
     if concept.description:
@@ -288,7 +288,12 @@ def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
 
     if concept.source_lines and concept.source_lines[0]:
         start, end = concept.source_lines
-        lines.append(f"## Source\nLines {start}–{end} in `{concept.resource}`\n")
+        body = _read_body(concept, source_dir) if source_dir else ""
+        if body:
+            lang_hint = concept.resource.rsplit(".", 1)[-1] if "." in concept.resource else ""
+            lines.append(f"## Source\nLines {start}–{end} in `{concept.resource}`\n\n```{lang_hint}\n{body}\n```\n")
+        else:
+            lines.append(f"## Source\nLines {start}–{end} in `{concept.resource}`\n")
 
     if concept.related:
         lines.append("## Related\n")
@@ -331,8 +336,8 @@ def _body(concept: Concept, all_concepts: dict[str, Concept]) -> str:
     return "\n".join(lines)
 
 
-def render_concept(concept: Concept, all_concepts: dict[str, Concept]) -> str:
-    return _frontmatter(concept) + "\n" + _body(concept, all_concepts)
+def render_concept(concept: Concept, all_concepts: dict[str, Concept], source_dir: Path | None = None) -> str:
+    return _frontmatter(concept) + "\n" + _body(concept, all_concepts, source_dir=source_dir)
 
 
 def render_dir_index(
@@ -1294,7 +1299,8 @@ def write_bundle(
                         continue  # keep enriched version
             except Exception:
                 pass
-        out_path.write_text(render_concept(c, all_map), encoding="utf-8")
+        src_dir = Path(source_root) if source_root else None
+        out_path.write_text(render_concept(c, all_map, source_dir=src_dir), encoding="utf-8")
 
     # ── 2. Build directory tree from all concept paths ────────────────────
     # dir_path (relative to output_dir) → {"subdirs": set, "concepts": list}
