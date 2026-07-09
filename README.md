@@ -3,7 +3,7 @@
 </p> -->
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/UmairBaig8/okf-generator@main/docs/images/okf_banner.png" alt="okf-generator demo" width="700">
+  <img src="https://cdn.jsdelivr.net/gh/UmairBaig8/okf-generator@main/docs/images/okf_banner.jpg" alt="okf-generator demo" width="700">
 </p>
 
 <p align="center">
