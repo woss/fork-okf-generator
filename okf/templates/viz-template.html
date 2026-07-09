@@ -366,6 +366,7 @@ button, select, input { font:inherit; }
   </div>
 </div>
 
+<div id="code-panel-backdrop" onclick="closeCodePanel()" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;display:none;background:rgba(0,0,0,0.3)"></div>
 <div id="code-panel">
   <div id="code-panel-header">
     <h3><span>Source Code</span><span id="code-panel-path" style="font-size:11px;color:var(--text-3);font-weight:400"></span></h3>
@@ -717,6 +718,7 @@ var egoCy = null;
 var globalCy = null;
 
 async function selectConcept(id) {
+  closeCodePanel();
   qs('landing').classList.add('hidden');
   qs('detail').classList.remove('hidden');
   qs('detail').classList.remove('fade-in'); void qs('detail').offsetWidth; qs('detail').classList.add('fade-in');
@@ -908,14 +910,18 @@ function showCodePanel(id) {
   var src = c.source || c.raw || c.code || c.body || '';
   if (!src) return;
   var ext = (c.resource || '').split('.').pop();
-  var lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',kt:'kotlin',dart:'dart'}[ext] || ext || '';
+  var lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[ext] || ext || '';
   qs('code-panel-content').innerHTML = '<pre><code class="language-' + lang + '">' + esc(src) + '</code></pre>';
   qs('code-panel-path').textContent = c.resource || '';
   qs('code-panel').classList.add('open');
+  qs('code-panel-backdrop').style.display = 'block';
   var codeEl = qs('code-panel-content').querySelector('code');
   if (codeEl && window.Prism) Prism.highlightElement(codeEl);
 }
-function closeCodePanel() { qs('code-panel').classList.remove('open'); }
+function closeCodePanel() {
+  qs('code-panel').classList.remove('open');
+  qs('code-panel-backdrop').style.display = 'none';
+}
 
 // ---- Ego Graph (Cytoscape) ----
 function renderEgoGraph(centerId, concept) {
