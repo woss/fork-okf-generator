@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for kotlin/easy/src/main/kotlin/com/okfgen/utils
 resource: kotlin/easy/src/main/kotlin/com/okfgen/utils
-timestamp: '2026-07-10T18:00:15Z'
+timestamp: '2026-07-10T18:02:55Z'
 title: utils
 type: Index
 ---

@@ -14,7 +14,7 @@ tags:
 - ecosystem:pip
 - version:==5.0.1
 - manifest:requirements.txt
-timestamp: '2026-07-10T17:59:43Z'
+timestamp: '2026-07-10T18:02:24Z'
 title: redis
 type: Dependency
 ---
