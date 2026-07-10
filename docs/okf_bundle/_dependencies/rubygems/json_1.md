@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - ecosystem:rubygems
-- version:~> 2.7
 - manifest:Gemfile
-timestamp: '2026-07-10T18:02:24Z'
+- version:~> 2.7
+timestamp: '2026-07-10T18:06:31Z'
 title: json
 type: Dependency
 ---

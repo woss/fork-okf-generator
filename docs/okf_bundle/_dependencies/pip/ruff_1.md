@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- manifest:pyproject.toml
 - ecosystem:pip
+- manifest:pyproject.toml
 - version:>=0.1.0
-timestamp: '2026-07-10T18:02:24Z'
+timestamp: '2026-07-10T18:06:31Z'
 title: ruff
 type: Dependency
 ---
