@@ -74,8 +74,9 @@ body {
   font-size:14px; line-height:1.5;
 
   background-color:var(--bg);
-  background-image:var(--bg-image);
-  background-size:150% 150%;
+  background-image:var(--bg-image), url("bg.png");
+  background-size:150% 150%, cover;
+  background-blend-mode:normal, overlay;
   animation:breathe 18s var(--ease) infinite alternate;
 
   transition:background-color .18s var(--ease), color .18s var(--ease);

@@ -8,6 +8,7 @@ Usage:
 import argparse
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -272,7 +273,19 @@ def main():
     html, n_nodes, n_edges = visualize(bundle_dir)
 
     out = Path(args.output).resolve() if args.output else bundle_dir / "viz.html"
+
+    # Replace bg placeholder with actual output-relative path
+    out_dir = out.parent
+    html = html.replace("{BG_PATH}", "bg.png")
+
     out.write_text(html, encoding="utf-8")
+
+    # Copy background image alongside the viz
+    bg_src = Path(__file__).parent / "templates" / "bg.png"
+    bg_dst = out_dir / "bg.png"
+    if bg_src.exists():
+        shutil.copy2(bg_src, bg_dst)
+
     print(f"Visualization written -> {out}")
     print(f"  {n_nodes} concepts, {n_edges} edges")
     print(f"  Open in browser: file://{out}")
