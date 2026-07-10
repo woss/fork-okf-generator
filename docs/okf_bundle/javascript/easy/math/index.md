@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for javascript/easy/math
 resource: javascript/easy/math
-timestamp: '2026-07-10T18:46:12Z'
+timestamp: '2026-07-10T18:52:44Z'
 title: math
 type: Index
 ---

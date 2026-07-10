@@ -9,12 +9,12 @@ tags:
 - type:Dependency
 - module:ruby
 - domain:easy
-- git:branch:main
+- git:branch:HEAD
 - git:repo:okf-generator
+- ecosystem:rubygems
 - version:~> 3.3
 - manifest:Gemfile
-- ecosystem:rubygems
-timestamp: '2026-07-10T18:45:41Z'
+timestamp: '2026-07-07T06:58:41Z'
 title: date
 type: Dependency
 ---

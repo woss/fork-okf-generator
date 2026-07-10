@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for cpp
 resource: cpp
-timestamp: '2026-07-10T18:46:12Z'
+timestamp: '2026-07-10T18:52:44Z'
 title: cpp
 type: Index
 ---

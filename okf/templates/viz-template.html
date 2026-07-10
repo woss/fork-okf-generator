@@ -101,23 +101,11 @@ html[data-theme="light"] .nav-seg { background:rgba(0,0,0,.04); }
 }
 #breadcrumb .crumb {
   cursor:pointer; color:var(--text-3); padding:2px 8px; border-radius:var(--r-sm);
-  transition:all .15s var(--ease); font-weight:500; position:relative;
+  transition:all .15s var(--ease); font-weight:500;
 }
 #breadcrumb .crumb:hover { color:var(--accent-strong); background:var(--accent-soft); }
 #breadcrumb .sep { color:var(--border-strong); font-size:10px; user-select:none; }
 #breadcrumb .current { color:var(--text); background:var(--surface); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.06); }
-.bc-popup {
-  position:absolute; top:100%; left:0; margin-top:4px;
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md);
-  padding:4px; min-width:180px; max-height:260px; overflow-y:auto;
-  box-shadow:0 8px 24px rgba(0,0,0,.25); z-index:20;
-}
-.bc-popup-item {
-  display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:var(--r-sm);
-  font-size:12px; cursor:pointer; color:var(--text-2); transition:all .1s var(--ease);
-}
-.bc-popup-item:hover { background:var(--accent-soft); color:var(--text); }
-.bc-popup-item .dot { width:6px; height:6px; border-radius:50%; flex:none; }
 .icon-btn {
   width:34px; height:34px; border-radius:var(--r-sm); background:transparent; border:1px solid transparent;
   color:var(--text-2); display:flex; align-items:center; justify-content:center; cursor:pointer;
@@ -801,35 +789,12 @@ function renderLandingStats(nodes) {
   qs('landing').innerHTML = '<div class="eyebrow">' + esc(label) + '</div><h1>' + esc(heading) + '</h1><p class="sub">' + total + ' concepts across ' + Object.keys(doms).length + ' domains.</p>' + statHtml + domHtml;
 }
 
-function showBcPopup(e, prefix) {
-  e.stopPropagation();
-  var existing = document.querySelector('.bc-popup');
-  if (existing) { existing.remove(); return; }
-  var items = currentResults.filter(function(n) {
-    var cid = n.concept_id || n.id || '';
-    return cid === prefix || (cid.indexOf(prefix + '/') === 0);
-  });
-  if (!items.length) {
-    // No concepts at this level — try selecting as module
-    selectConcept(prefix);
-    return;
-  }
-  var popup = document.createElement('div');
-  popup.className = 'bc-popup';
-  items.sort(function(a, b) { return (a.title || '').localeCompare(b.title || ''); });
-  items.slice(0, 40).forEach(function(n) {
-    var cid = n.concept_id || n.id || '';
-    var color = TYPE_COLORS[n.type] || '#888';
-    var item = document.createElement('div');
-    item.className = 'bc-popup-item';
-    item.innerHTML = '<span class="dot" style="background:' + color + '"></span>' + esc(n.title || cid.split('/').pop());
-    item.onclick = function() { popup.remove(); selectConcept(cid); };
-    popup.appendChild(item);
-  });
-  e.target.parentNode.appendChild(popup);
-  document.addEventListener('click', function _close(e2) {
-    if (!popup.contains(e2.target)) { popup.remove(); document.removeEventListener('click', _close); }
-  }, { once: true });
+function breadcrumbNav(path) {
+  // Try direct path first, then path/index for module concepts
+  if (__nodeById[path]) { selectConcept(path); return; }
+  if (__nodeById[path + '/index']) { selectConcept(path + '/index'); return; }
+  // Fallback: filter by domain
+  filterToDomain(path.split('/')[0]);
 }
 
 function showLanding() {
@@ -880,7 +845,7 @@ async function selectConcept(id) {
     for (var i = 0; i < parts.length - 1; i++) {
       var seg = parts[i];
       path = path ? path + '/' + seg : seg;
-      crumbHtml += '<span class="sep">›</span><span class="crumb" onclick="showBcPopup(event, \'' + esc(path) + '\')">' + esc(seg) + '</span>';
+      crumbHtml += '<span class="sep">›</span><span class="crumb" onclick="breadcrumbNav(\'' + esc(path) + '\')">' + esc(seg) + '</span>';
     }
   }
   crumbHtml += '<span class="sep">›</span><span class="crumb current">' + esc(c.title || parts[parts.length - 1]) + '</span>';
