@@ -289,10 +289,14 @@ html[data-theme="light"] #browse-content {
 #detail { max-width:1360px; }
 #detail-header {
   position:sticky; top:0; z-index:9;
-  background:transparent; padding:var(--sp-4) 0 var(--sp-3);
-  margin:0 0 var(--sp-3);
+  background:rgba(19,19,25,.35); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  padding:var(--sp-5) var(--sp-5) var(--sp-4);
+  margin:calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) var(--sp-3);
   border-bottom:1px solid rgba(255,255,255,.06);
   position:relative;
+}
+html[data-theme="light"] #detail-header {
+  background:rgba(255,255,255,.45);
 }
 html[data-theme="light"] #detail-header {
   border-bottom-color:rgba(0,0,0,.06);
