@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for rust/complex/models
 resource: rust/complex/models
-timestamp: '2026-07-10T15:03:38Z'
+timestamp: '2026-07-10T15:29:27Z'
 title: models
 type: Index
 ---

@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- ecosystem:pip
 - manifest:requirements.txt
+- ecosystem:pip
 - version:==5.0.1
-timestamp: '2026-07-10T15:03:07Z'
+timestamp: '2026-07-10T15:28:53Z'
 title: redis
 type: Dependency
 ---
