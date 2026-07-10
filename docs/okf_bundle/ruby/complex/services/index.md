@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for ruby/complex/services
 resource: ruby/complex/services
-timestamp: '2026-07-10T20:22:47Z'
+timestamp: '2026-07-10T20:32:13Z'
 title: services
 type: Index
 ---

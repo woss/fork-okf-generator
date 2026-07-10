@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for java/easy/model
 resource: java/easy/model
-timestamp: '2026-07-10T20:22:47Z'
+timestamp: '2026-07-10T20:32:13Z'
 title: model
 type: Index
 ---
