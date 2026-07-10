@@ -784,6 +784,21 @@ function _parseRel(text) {
   return out;
 }
 
+function _parseRelationships(text, type) {
+  if (!text) return [];
+  var out = [];
+  text.split('\n').forEach(function(line) {
+    if (line.indexOf('|') !== 0) return;
+    var cells = line.split('|').filter(function(c) { return c.trim(); });
+    if (cells.length < 2) return;
+    var relType = cells[0].trim().toLowerCase();
+    if (relType !== type && relType !== type.replace('_', ' ')) return;
+    var m = cells[1].match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (m) out.push({ title: m[1], concept_id: m[2].replace(/\.md$/, '') });
+  });
+  return out;
+}
+
 function _parseBullets(text) {
   if (!text) return [];
   if (Array.isArray(text)) return text;
@@ -806,9 +821,9 @@ function renderDetail(c) {
     parameters: c.parameters || sections.parameters || '',
     returns: c.returns || sections.returns || '',
     source: c.source || c.raw || c.code || c.body || '',
-    related: _parseRel(c.related || sections.related),
-    calls: _parseRel(c.calls || sections.calls),
-    called_by: _parseRel(c.called_by || sections['called by']),
+    related: _parseRel(c.related || sections.related) || _parseRelationships(sections.relationships, 'related'),
+    calls: _parseRel(c.calls || sections.calls) || _parseRelationships(sections.relationships, 'calls'),
+    called_by: _parseRel(c.called_by || sections['called by']) || _parseRelationships(sections.relationships, 'called_by'),
     used_by: _parseRel(c.used_by || sections['used by']),
     tags: c.tags || [],
     visibility: c.visibility || _parseBullets(sections.visibility),

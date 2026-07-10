@@ -112,6 +112,21 @@ def build_graph(bundle_dir: Path) -> tuple[list[dict], list[dict], list[str], di
             return []
         return re.findall(r"\(/([^)]+)\.md\)", text)
 
+    def _parse_relationships_table(text: str, rel_type: str) -> list[str]:
+        """Extract concept_ids from relationships table filtered by type."""
+        if not text:
+            return []
+        ids = []
+        for line in text.splitlines():
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.split("|")[1:-1]]
+            if len(cells) >= 2 and cells[0].lower() == rel_type:
+                m = re.search(r"\(/([^)]+)\.md\)", cells[1])
+                if m:
+                    ids.append(m.group(1))
+        return ids
+
     links = []
     link_set = set()
     for c in concepts:
@@ -119,19 +134,21 @@ def build_graph(bundle_dir: Path) -> tuple[list[dict], list[dict], list[str], di
         sections = c.get("sections", {})
         schema = c.get("body_extra", {})
 
-        for rel_id in _extract_ids(sections.get("related", "")):
+        rel_text = sections.get("relationships", "")
+
+        for rel_id in _extract_ids(sections.get("related", "")) + _parse_relationships_table(rel_text, "related"):
             key = f"rel||{src}||{rel_id}"
             if key not in link_set and rel_id in node_ids:
                 link_set.add(key)
                 links.append({"source": src, "target": rel_id, "type": "related"})
 
-        for callee_id in _extract_ids(sections.get("calls", "")):
+        for callee_id in _extract_ids(sections.get("calls", "")) + _parse_relationships_table(rel_text, "calls"):
             key = f"call||{src}||{callee_id}"
             if key not in link_set and callee_id in node_ids:
                 link_set.add(key)
                 links.append({"source": src, "target": callee_id, "type": "calls"})
 
-        for caller_id in _extract_ids(sections.get("called by", "")):
+        for caller_id in _extract_ids(sections.get("called by", "")) + _parse_relationships_table(rel_text, "called_by"):
             key = f"cb||{caller_id}||{src}"
             if key not in link_set and caller_id in node_ids:
                 link_set.add(key)
