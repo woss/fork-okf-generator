@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for julia/complex/geometry
 resource: julia/complex/geometry
-timestamp: '2026-07-10T16:55:01Z'
+timestamp: '2026-07-10T16:57:27Z'
 title: geometry
 type: Index
 ---

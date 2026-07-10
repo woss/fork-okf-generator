@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for sql/complex/schema
 resource: sql/complex/schema
-timestamp: '2026-07-10T16:55:01Z'
+timestamp: '2026-07-10T16:57:27Z'
 title: schema
 type: Index
 ---
