@@ -56,14 +56,25 @@ button, select, input { font:inherit; }
 ::-webkit-scrollbar-track { background:transparent; }
 
 #topbar {
-  height:56px; background:var(--surface); border-bottom:1px solid var(--border);
-  display:flex; align-items:center; padding:0 var(--sp-5); gap:var(--sp-4);
+  height:56px; display:flex; align-items:center; justify-content:center;
+  background:rgba(10,10,15,0.55); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50;
 }
-#brand { display:flex; align-items:center; gap:10px; }
-.nav-logo-icon { display:flex; align-items:center; justify-content:center; width:32px; height:32px; flex-shrink:0; }
-#brand-text { display:flex; flex-direction:column; line-height:1.2; }
+html[data-theme="light"] #topbar { background:rgba(247,247,251,0.65); }
+#topbar-inner {
+  width:84%; max-width:1200px; display:flex; align-items:center; gap:var(--sp-5);
+}
+#brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.nav-logo-icon { display:flex; align-items:center; justify-content:center; width:30px; height:30px; flex-shrink:0; }
 #brand-text .name { font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; }
 #topbar-spacer { flex:1; }
+.nav-item {
+  font-size:13px; font-weight:500; color:var(--text-2); padding:6px 18px;
+  border-radius:99px; cursor:pointer; transition:all .15s var(--ease);
+  background:transparent; border:1px solid transparent; user-select:none;
+}
+.nav-item:hover { color:var(--text); background:var(--surface-2); border-color:var(--border); }
+.nav-item.active { color:var(--accent-strong); background:var(--accent-soft); border-color:var(--accent); }
 
 #breadcrumb { font-size:12.5px; color:var(--text-3); margin-bottom:var(--sp-4); }
 #breadcrumb .crumb { cursor:pointer; }
@@ -313,48 +324,50 @@ button, select, input { font:inherit; }
 </head>
 <body>
 <div id="topbar">
-  <div id="brand">
-    <div class="nav-logo-icon" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="32" height="32">
-        <defs>
-          <linearGradient id="icon_grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#5b21b6" />
-            <stop offset="50%" stop-color="#7c3aed" />
-            <stop offset="100%" stop-color="#a78bfa" />
-          </linearGradient>
-          <linearGradient id="icon_grad_dark" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#4c1d95" />
-            <stop offset="100%" stop-color="#5b21b6" />
-          </linearGradient>
-        </defs>
-        <g transform="translate(5, 10)">
-          <rect x="20" y="30" width="30" height="12" rx="6" fill="#c4b5fd" />
-          <rect x="60" y="30" width="50" height="12" rx="6" fill="url(#icon_grad)" />
-          <path d="M 120 36 L 160 36 L 175 60" fill="none" stroke="url(#icon_grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-          <rect x="10" y="65" width="25" height="14" rx="7" fill="#7c3aed" />
-          <rect x="45" y="65" width="75" height="14" rx="7" fill="url(#icon_grad_dark)" />
-          <path d="M 130 72 L 180 72 L 195 90" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
-          <rect x="30" y="100" width="40" height="14" rx="7" fill="#a78bfa" />
-          <path d="M 80 107 L 150 107" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" />
-          <circle cx="195" cy="107" r="16" fill="url(#icon_grad)" />
-          <circle cx="195" cy="107" r="7" fill="#ffffff" />
-          <circle cx="195" cy="107" r="3" fill="#4c1d95" />
-          <rect x="15" y="135" width="60" height="14" rx="7" fill="url(#icon_grad_dark)" />
-          <path d="M 85 142 L 165 142 L 195 125" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
-          <rect x="35" y="170" width="45" height="12" rx="6" fill="#c4b5fd" />
-          <path d="M 90 176 L 140 176 L 175 150" fill="none" stroke="url(#icon_grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
-        </g>
-      </svg>
+  <div id="topbar-inner">
+    <div id="brand">
+      <div class="nav-logo-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" width="30" height="30">
+          <defs>
+            <linearGradient id="icon_grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#5b21b6" />
+              <stop offset="50%" stop-color="#7c3aed" />
+              <stop offset="100%" stop-color="#a78bfa" />
+            </linearGradient>
+          </defs>
+          <g transform="translate(5, 10)">
+            <rect x="20" y="30" width="30" height="12" rx="6" fill="#c4b5fd" />
+            <rect x="60" y="30" width="50" height="12" rx="6" fill="url(#icon_grad)" />
+            <path d="M 120 36 L 160 36 L 175 60" fill="none" stroke="url(#icon_grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="10" y="65" width="25" height="14" rx="7" fill="#7c3aed" />
+            <rect x="45" y="65" width="75" height="14" rx="7" fill="url(#icon_grad)" />
+            <path d="M 130 72 L 180 72 L 195 90" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="30" y="100" width="40" height="14" rx="7" fill="#a78bfa" />
+            <path d="M 80 107 L 150 107" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" />
+            <circle cx="195" cy="107" r="16" fill="url(#icon_grad)" />
+            <circle cx="195" cy="107" r="7" fill="#ffffff" />
+            <circle cx="195" cy="107" r="3" fill="#4c1d95" />
+            <rect x="15" y="135" width="60" height="14" rx="7" fill="url(#icon_grad)" />
+            <path d="M 85 142 L 165 142 L 195 125" fill="none" stroke="url(#icon_grad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="35" y="170" width="45" height="12" rx="6" fill="#c4b5fd" />
+            <path d="M 90 176 L 140 176 L 175 150" fill="none" stroke="url(#icon_grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+          </g>
+        </svg>
+      </div>
+      <div id="brand-text">
+        <span class="name">OKF Generator</span>
+      </div>
     </div>
-    <div id="brand-text">
-      <span class="name">OKF Generator</span>
-    </div>
+    <div class="nav-item active" onclick="switchTab('browse',this)">Browse</div>
+    <div class="nav-item" onclick="switchTab('graph',this)">Explore</div>
+    <div id="topbar-spacer"></div>
+    <a href="https://github.com/UmairBaig8/okf-generator" target="_blank" class="icon-btn" style="text-decoration:none" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="17" height="17"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark theme" title="Toggle theme">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+    </button>
   </div>
-  <div id="topbar-spacer"></div>
-  <a href="https://github.com/UmairBaig8/okf-generator" target="_blank" style="font-size:11px;color:var(--text-3);text-decoration:none;margin-right:8px;white-space:nowrap">okf</a>
-  <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark theme" title="Toggle theme">
-    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-  </button>
 </div>
 <div id="layout">
   <div id="sidebar">
@@ -374,10 +387,6 @@ button, select, input { font:inherit; }
   </div>
   <div id="sidebar-resize"></div>
   <div id="main">
-    <div id="tabs">
-      <button class="tab active" onclick="switchTab('browse',this)">Browse</button>
-      <button class="tab" onclick="switchTab('graph',this)">Global Graph</button>
-    </div>
     <div id="tab-browse" class="tab-content active">
       <div id="breadcrumb"><span class="crumb current" onclick="showLanding()">Home</span></div>
       <div id="landing"></div>
@@ -1284,8 +1293,8 @@ function renderGlobalGraph(data) {
 
 // ---- Tab Switching ----
 function switchTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-  btn.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(t) { t.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
   document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
   qs('tab-' + name).classList.add('active');
   if (name === 'graph') { loadGlobalGraph(); if (globalGraphInstance) setTimeout(function() { globalGraphInstance.fit(); }, 300); }
