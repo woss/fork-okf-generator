@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for _dependencies/pip
 resource: _dependencies/pip
-timestamp: '2026-07-10T18:17:16Z'
+timestamp: '2026-07-10T18:20:30Z'
 title: pip
 type: Index
 ---

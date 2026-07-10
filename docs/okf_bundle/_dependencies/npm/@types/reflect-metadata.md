@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- manifest:package.json
 - version:^0.1.0
+- manifest:package.json
 - ecosystem:npm
-timestamp: '2026-07-10T18:16:39Z'
+timestamp: '2026-07-10T18:19:53Z'
 title: '@types/reflect-metadata'
 type: Dependency
 ---

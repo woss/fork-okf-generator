@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for ruby/easy
 resource: ruby/easy
-timestamp: '2026-07-10T18:17:16Z'
+timestamp: '2026-07-10T18:20:30Z'
 title: easy
 type: Index
 ---
