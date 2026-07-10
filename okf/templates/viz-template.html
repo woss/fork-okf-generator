@@ -835,7 +835,7 @@ async function selectConcept(id) {
   if (parts.length > 1) {
     for (var i = 0; i < parts.length - 1; i++) {
       var seg = esc(parts[i]);
-      crumbHtml += '<span class="sep">›</span><span class="crumb">' + seg + '</span>';
+      crumbHtml += '<span class="sep">›</span><span class="crumb" onclick="filterToDomain(\'' + seg.replace(/'/g,"\\'") + '\')">' + seg + '</span>';
     }
   }
   crumbHtml += '<span class="sep">›</span><span class="crumb current">' + esc(c.title || parts[parts.length - 1]) + '</span>';
