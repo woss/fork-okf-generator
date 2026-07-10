@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for ruby
 resource: ruby
-timestamp: '2026-07-10T17:27:24Z'
+timestamp: '2026-07-10T17:34:20Z'
 title: ruby
 type: Index
 ---

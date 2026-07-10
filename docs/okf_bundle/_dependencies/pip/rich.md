@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - manifest:requirements.txt
-- ecosystem:pip
 - version:==13.7.0
-timestamp: '2026-07-10T17:26:52Z'
+- ecosystem:pip
+timestamp: '2026-07-10T17:33:49Z'
 title: rich
 type: Dependency
 ---
