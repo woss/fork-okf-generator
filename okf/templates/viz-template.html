@@ -214,8 +214,37 @@ button, select, input { font:inherit; }
   padding:var(--sp-4) var(--sp-5); border-bottom:1px solid var(--border);
   flex:none;
 }
-#code-panel-header h3 { font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px; }
-#code-panel-header .close-btn {
+#code-panel-tabs { display:flex; gap:0; }
+#code-panel-tabs .code-tab {
+  background:transparent; border:1px solid var(--border); color:var(--text-3); padding:5px 14px;
+  font-size:12px; font-weight:500; cursor:pointer; transition:all .15s var(--ease);
+  border-radius:var(--r-sm) var(--r-sm) 0 0; margin-bottom:-1px;
+}
+#code-panel-tabs .code-tab.active { background:var(--surface-2); color:var(--accent-strong); border-bottom-color:var(--surface-2); }
+#code-panel-tabs .code-tab:hover:not(.active) { color:var(--text); background:var(--surface); }
+.code-tab-pane { display:none; }
+.code-tab-pane.active { display:block; }
+#code-panel-parse { padding:var(--sp-3); overflow:auto; height:100%; font-size:13px; }
+.parse-node {
+  padding:2px 0 2px 20px; cursor:default; white-space:nowrap;
+  border-left:1px solid var(--border); margin-left:10px;
+}
+.parse-node.root { margin-left:0; border-left:none; padding-left:0; }
+.parse-node .node-toggle {
+  display:inline-block; width:14px; text-align:center; cursor:pointer; user-select:none;
+  color:var(--text-3); font-size:10px; margin-left:-18px;
+}
+.parse-node .node-type { color:var(--accent-strong); font-weight:500; }
+.parse-node .node-text { color:var(--text-2); }
+.parse-node .node-text.str { color:#fbbf24; }
+.parse-node .node-text.num { color:#fb923c; }
+.parse-node .node-text.kw { color:#f472b6; font-weight:500; }
+.parse-node .node-text.id { color:#38bdf8; }
+.parse-node.collapsed > .parse-children { display:none; }
+.parse-node.collapsed > .node-toggle { transform:rotate(0deg); }
+.parse-node:not(.collapsed) > .node-toggle { transform:rotate(90deg); }
+.parse-node .parse-range { font-size:10px; color:var(--text-3); margin-left:6px; }
+.close-btn {
   width:30px; height:30px; border-radius:var(--r-sm); background:transparent; border:1px solid transparent;
   color:var(--text-2); display:flex; align-items:center; justify-content:center; cursor:pointer;
   transition:background .12s var(--ease);
@@ -369,14 +398,22 @@ button, select, input { font:inherit; }
 <div id="code-panel-backdrop" onclick="closeCodePanel()" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;display:none;background:rgba(0,0,0,0.3)"></div>
 <div id="code-panel">
   <div id="code-panel-header">
-    <h3><span>Source Code</span><span id="code-panel-path" style="font-size:11px;color:var(--text-3);font-weight:400"></span></h3>
+    <div id="code-panel-tabs">
+      <button class="code-tab active" data-tab="source" onclick="switchCodeTab('source')">Source</button>
+      <button class="code-tab" data-tab="parse" onclick="switchCodeTab('parse')">Parse Tree</button>
+    </div>
+    <span id="code-panel-path" style="font-size:11px;color:var(--text-3);font-weight:400;flex:1;text-align:center"></span>
     <button class="close-btn" onclick="closeCodePanel()" aria-label="Close code panel">&times;</button>
   </div>
-  <div id="code-panel-body"><pre id="code-panel-content"></pre></div>
+  <div id="code-panel-body">
+    <pre id="code-panel-content" class="code-tab-pane active"></pre>
+    <div id="code-panel-parse" class="code-tab-pane"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/web-tree-sitter@0.21.3/dist/tree-sitter.js"></script>
 <script>
 var DYNAMIC = {DYNAMIC_FLAG};
 var BUNDLE_DATA = {BUNDLE_DATA};
@@ -922,6 +959,197 @@ function closeCodePanel() {
   qs('code-panel').classList.remove('open');
   qs('code-panel-backdrop').style.display = 'none';
 }
+
+// ---- Tab Switching ----
+var _currentCodeId = '';
+function switchCodeTab(tab) {
+  document.querySelectorAll('.code-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+  document.querySelectorAll('.code-tab-pane').forEach(function(p) { p.classList.toggle('active', p.id === 'code-panel-' + tab); });
+  if (tab === 'parse') renderParseTree(_currentCodeId);
+}
+
+// ---- Tree-sitter WASM Parser ----
+var _tsInitialized = false;
+var _tsParsers = {};
+
+var _tsLangMap = {
+  py:'python', js:'javascript', ts:'typescript', rb:'ruby', rs:'rust',
+  go:'go', java:'java', kt:'kotlin', cs:'c_sharp', cpp:'cpp', c:'c',
+  swift:'swift', php:'php', scala:'scala', dart:'dart', jl:'julia',
+  sql:'sql',
+};
+var _tsWasmUrls = {
+  python:'https://cdn.jsdelivr.net/npm/tree-sitter-python@0.21.1/tree-sitter-python.wasm',
+  javascript:'https://cdn.jsdelivr.net/npm/tree-sitter-javascript@0.21.1/tree-sitter-javascript.wasm',
+  typescript:'https://cdn.jsdelivr.net/npm/tree-sitter-typescript@0.21.1/tree-sitter-typescript.wasm',
+  ruby:'https://cdn.jsdelivr.net/npm/tree-sitter-ruby@0.21.1/tree-sitter-ruby.wasm',
+  rust:'https://cdn.jsdelivr.net/npm/tree-sitter-rust@0.21.1/tree-sitter-rust.wasm',
+  go:'https://cdn.jsdelivr.net/npm/tree-sitter-go@0.21.1/tree-sitter-go.wasm',
+  java:'https://cdn.jsdelivr.net/npm/tree-sitter-java@0.21.1/tree-sitter-java.wasm',
+  kotlin:'https://cdn.jsdelivr.net/npm/tree-sitter-kotlin@0.21.1/tree-sitter-kotlin.wasm',
+  c_sharp:'https://cdn.jsdelivr.net/npm/tree-sitter-c-sharp@0.21.1/tree-sitter-c-sharp.wasm',
+  cpp:'https://cdn.jsdelivr.net/npm/tree-sitter-cpp@0.21.1/tree-sitter-cpp.wasm',
+  c:'https://cdn.jsdelivr.net/npm/tree-sitter-c@0.21.1/tree-sitter-c.wasm',
+  swift:'https://cdn.jsdelivr.net/npm/tree-sitter-swift@0.21.1/tree-sitter-swift.wasm',
+  php:'https://cdn.jsdelivr.net/npm/tree-sitter-php@0.21.1/tree-sitter-php.wasm',
+  scala:'https://cdn.jsdelivr.net/npm/tree-sitter-scala@0.21.1/tree-sitter-scala.wasm',
+  dart:'https://cdn.jsdelivr.net/npm/tree-sitter-dart@0.21.1/tree-sitter-dart.wasm',
+  julia:'https://cdn.jsdelivr.net/npm/tree-sitter-julia@0.21.1/tree-sitter-julia.wasm',
+  sql:'https://cdn.jsdelivr.net/npm/tree-sitter-sql@0.21.1/tree-sitter-sql.wasm',
+};
+
+async function getTsParser(langName) {
+  if (_tsParsers[langName]) return _tsParsers[langName];
+  if (!_tsInitialized) {
+    await TreeSitter.init();
+    _tsInitialized = true;
+  }
+  var url = _tsWasmUrls[langName];
+  if (!url) return null;
+  try {
+    var lang = await TreeSitter.Language.load(url);
+    var parser = new TreeSitter();
+    parser.setLanguage(lang);
+    _tsParsers[langName] = parser;
+    return parser;
+  } catch(e) {
+    console.warn('Failed to load WASM parser for ' + langName + ': ' + e.message);
+    return null;
+  }
+}
+
+function _tsNodeName(n) {
+  return n.type;
+}
+
+function _tsNodeText(n, src) {
+  try { return src.slice(n.startIndex, n.endIndex); } catch(e) { return ''; }
+}
+
+function _renderTsTree(node, src, depth, isLast) {
+  var nn = _tsNodeName(node);
+  var txt = _tsNodeText(node, src).replace(/\s+/g, ' ').trim();
+  if (txt.length > 60) txt = txt.slice(0, 60) + '…';
+  var prefix = '';
+  for (var i = 0; i < depth; i++) prefix += '  ';
+  var hasChildren = node.childCount > 0;
+  var line = '';
+  if (hasChildren) {
+    line += '<div class="parse-node' + (depth === 0 ? ' root' : '') + '" data-depth="' + depth + '">';
+    line += '<span class="node-toggle" onclick="toggleParseNode(this)">▶</span>';
+    line += '<span class="node-type">' + nn + '</span>';
+    if (txt && nn !== 'program' && nn !== 'module' && nn !== 'block' && nn !== 'statement_block' && nn !== 'body' && nn !== 'declaration') {
+      line += ' <span class="node-text">' + esc(txt) + '</span>';
+    }
+    line += '<span class="parse-range">[' + node.startIndex + '-' + node.endIndex + ']</span>';
+    line += '<div class="parse-children">';
+    for (var j = 0; j < node.childCount; j++) {
+      line += _renderTsTree(node.child(j), src, depth + 1, j === node.childCount - 1);
+    }
+    line += '</div></div>';
+  } else {
+    var cls = 'node-text';
+    if (/^['"]/.test(txt)) cls += ' str';
+    else if (/^\d/.test(txt)) cls += ' num';
+    else if (/^(return|if|else|for|while|def|class|import|from|let|const|var|function|fn|pub|use|mod|struct|enum|trait|impl|interface|package|val|var|fun)$/.test(txt)) cls += ' kw';
+    else if (/^[A-Z]/.test(txt) && txt.length < 40) cls += ' id';
+    line += '<div class="parse-node" data-depth="' + depth + '">';
+    line += '<span class="node-type">' + nn + '</span>';
+    if (txt) line += ' <span class="' + cls + '">' + esc(txt) + '</span>';
+    line += '<span class="parse-range">[' + node.startIndex + '-' + node.endIndex + ']</span>';
+    line += '</div>';
+  }
+  return line;
+}
+
+function toggleParseNode(el) {
+  var node = el.closest('.parse-node');
+  if (node) node.classList.toggle('collapsed');
+}
+
+async function renderParseTree(id) {
+  var container = qs('code-panel-parse');
+  if (!id) return;
+  if (container.dataset.renderedFor === id) return;
+
+  var c = conceptCache[id] || __nodeById[id];
+  if (!c) { container.innerHTML = '<div class="empty-note">No concept data.</div>'; return; }
+
+  var src = c.source || c.raw || c.code || c.body || '';
+  if (!src) { container.innerHTML = '<div class="empty-note">No source code available.</div>'; return; }
+
+  var ext = (c.resource || '').split('.').pop();
+  var langName = _tsLangMap[ext] || ext || '';
+  if (!langName) { container.innerHTML = '<div class="empty-note">Unsupported language: ' + esc(ext) + '</div>'; return; }
+
+  container.innerHTML = '<div class="loading">Parsing with tree-sitter…</div>';
+  var parser = await getTsParser(langName);
+  if (!parser) {
+    container.innerHTML = '<div class="empty-note">Could not load tree-sitter parser for ' + esc(langName) + '. Check network connection.</div>';
+    return;
+  }
+
+  try {
+    var tree = parser.parse(src);
+    var root = tree.rootNode;
+
+    // Named-only tree for readability
+    function namedChildren(n) {
+      var kids = [];
+      for (var i = 0; i < n.childCount; i++) {
+        var ch = n.child(i);
+        if (ch.isNamed) kids.push(ch);
+      }
+      return kids;
+    }
+
+    function renderNamed(node, depth) {
+      var nn = node.type;
+      var txt = _tsNodeText(node, src).replace(/\s+/g, ' ').trim();
+      if (txt.length > 60) txt = txt.slice(0, 60) + '…';
+      var kids = namedChildren(node);
+      var line = '<div class="parse-node' + (depth === 0 ? ' root' : '') + '">';
+      if (kids.length > 0) {
+        line += '<span class="node-toggle" onclick="toggleParseNode(this)">▶</span>';
+      } else {
+        line += '<span class="node-toggle" style="visibility:hidden">▶</span>';
+      }
+      line += '<span class="node-type">' + nn + '</span>';
+      if (txt && kids.length === 0) {
+        var cls = 'node-text';
+        if (/^['"]/.test(txt)) cls += ' str';
+        else if (/^\d/.test(txt)) cls += ' num';
+        else if (/^(return|if|else|for|while|def|class|import|from|let|const|var|function|fn|pub|use|mod|struct|enum|trait|impl|interface|package|val|var|fun)$/.test(txt)) cls += ' kw';
+        else if (nn === 'identifier' || nn === 'type_identifier') cls += ' id';
+        line += ' <span class="' + cls + '">' + esc(txt) + '</span>';
+      }
+      line += '<span class="parse-range">[' + node.startIndex + '-' + node.endIndex + ']</span>';
+      if (kids.length > 0) {
+        line += '<div class="parse-children">';
+        kids.forEach(function(k) { line += renderNamed(k, depth + 1); });
+        line += '</div>';
+      }
+      line += '</div>';
+      return line;
+    }
+
+    container.innerHTML = renderNamed(root, 0);
+    container.dataset.renderedFor = id;
+    container.querySelectorAll('.parse-node').forEach(function(n) {
+      if (n.dataset.depth > 3) n.classList.add('collapsed');
+    });
+  } catch(e) {
+    container.innerHTML = '<div class="empty-note">Parse error: ' + esc(e.message) + '</div>';
+  }
+}
+
+// Update showCodePanel to store current concept ID
+var _origShowCodePanel = showCodePanel;
+showCodePanel = function(id) {
+  _currentCodeId = id;
+  switchCodeTab('source');
+  _origShowCodePanel(id);
+};
 
 // ---- Ego Graph (Cytoscape) ----
 function renderEgoGraph(centerId, concept) {

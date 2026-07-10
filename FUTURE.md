@@ -43,13 +43,17 @@ Ordered by development effort (easiest first).
 
 ---
 
-## 4. Tree-sitter WASM in Viz
+## ~~4. Tree-sitter WASM in Viz~~ ✅ Done (v0.1.44)
 
-**Effort:** High (1–2 weeks)
+**What was done:**
+- Added `web-tree-sitter` + per-language WASM parsers loaded from jsDelivr CDN (17 languages)
+- Code panel now has a "Source" / "Parse Tree" tab switcher
+- Parse Tree renders a collapsible named AST tree with syntax-colored tokens
+- Deeply nested nodes auto-collapse for readability
+- Falls back gracefully if WASM fails to load (network issue, unsupported lang)
+- All 242 tests pass
 
-Compile tree-sitter parsers to WebAssembly, bundle them into the viz HTML. The viz graph becomes a **full offline code explorer** — click any concept to see parsed source with syntax highlighting, collapsible scopes, hover-to-reveal signatures. No server needed; the `.okf_bundle/` folder is fully self-contained.
-
-**What it unlocks:** Viz is no longer a static snapshot. It's an interactive IDE-like browser that works from any static host (GitHub Pages, S3, Render). Also enables a VS Code webview extension trivially (same WASM parsers).
+**What it unlocks:** Viz is no longer a static snapshot. It's an interactive AST browser — click any concept, switch to Parse Tree, see the full tree-sitter parse tree with collapsible scopes and syntax highlighting. Works offline after first load (CDN-cached WASM).
 
 ---
 
