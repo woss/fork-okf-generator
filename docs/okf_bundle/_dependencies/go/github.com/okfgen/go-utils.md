@@ -14,7 +14,7 @@ tags:
 - manifest:go.mod
 - ecosystem:go
 - version:v0.0.0
-timestamp: '2026-07-10T19:32:24Z'
+timestamp: '2026-07-10T19:37:35Z'
 title: github.com/okfgen/go-utils
 type: Dependency
 ---

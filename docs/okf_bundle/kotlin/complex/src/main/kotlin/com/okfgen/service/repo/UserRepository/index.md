@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for kotlin/complex/src/main/kotlin/com/okfgen/service/repo/UserRepository
 resource: kotlin/complex/src/main/kotlin/com/okfgen/service/repo/UserRepository
-timestamp: '2026-07-10T19:32:55Z'
+timestamp: '2026-07-10T19:38:10Z'
 title: UserRepository
 type: Index
 ---

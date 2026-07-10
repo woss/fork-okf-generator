@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for c
 resource: c
-timestamp: '2026-07-10T19:32:55Z'
+timestamp: '2026-07-10T19:38:10Z'
 title: c
 type: Index
 ---

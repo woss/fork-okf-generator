@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
+- manifest:pyproject.toml
 - ecosystem:pip
 - version:>=5.0.0
-- manifest:pyproject.toml
-timestamp: '2026-07-10T19:32:24Z'
+timestamp: '2026-07-10T19:37:35Z'
 title: redis
 type: Dependency
 ---

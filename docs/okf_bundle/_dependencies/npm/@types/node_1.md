@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - manifest:package.json
-- version:^20.10.0
 - ecosystem:npm
-timestamp: '2026-07-10T19:32:24Z'
+- version:^20.10.0
+timestamp: '2026-07-10T19:37:35Z'
 title: '@types/node'
 type: Dependency
 ---
