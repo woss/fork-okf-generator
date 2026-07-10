@@ -9,12 +9,12 @@ tags:
 - type:Dependency
 - module:python
 - domain:complex
-- git:branch:main
+- git:branch:HEAD
 - git:repo:okf-generator
-- version:==0.25.2
 - manifest:requirements.txt
 - ecosystem:pip
-timestamp: '2026-07-10T15:28:53Z'
+- version:==0.25.2
+timestamp: '2026-07-07T06:58:41Z'
 title: httpx
 type: Dependency
 ---

@@ -8,9 +8,9 @@ tags:
 - type:Function
 - module:typescript
 - domain:complex
-- git:branch:main
+- git:branch:HEAD
 - git:repo:okf-generator
-timestamp: '2026-07-10T15:28:53Z'
+timestamp: '2026-07-07T06:58:42Z'
 title: createUser
 type: Function
 ---

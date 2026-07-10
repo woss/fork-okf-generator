@@ -211,12 +211,10 @@ def visualize(bundle_dir: Path) -> tuple[str, int, int]:
     nodes, links, bundles, bundle_counts = build_graph(bundle_dir)
     bundle_name = bundle_dir.name
 
-    # Strip code from nodes for main JSON (code is sent separately per node)
     json_nodes = []
     for n in nodes:
         jn = {k: v for k, v in n.items() if k != "code"}
-        if n.get("code"):
-            jn["code"] = n["code"]
+        jn["code"] = n.get("code", "")
         json_nodes.append(jn)
 
     template_path = Path(__file__).parent / "templates" / "viz-template.html"

@@ -944,11 +944,25 @@ function renderDetail(c) {
 function showCodePanel(id) {
   var c = conceptCache[id] || __nodeById[id];
   if (!c) return;
-  var src = c.source || c.raw || c.code || c.body || '';
-  if (!src) return;
+  var code = c.code || '';
+  var body = c.body || '';
   var ext = (c.resource || '').split('.').pop();
   var lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[ext] || ext || '';
-  qs('code-panel-source').innerHTML = '<pre><code class="language-' + lang + '">' + esc(src) + '</code></pre>';
+  var html = '';
+  if (code) {
+    html += '<div class="sec"><h3>Source Code</h3><pre><code class="language-' + lang + '">' + esc(code) + '</code></pre></div>';
+  }
+  if (body && (!code || code !== body)) {
+    var bodyPreview = body.replace(/^---[\s\S]*?---\n?/, '').trim();
+    if (bodyPreview.length > 2000) bodyPreview = bodyPreview.slice(0, 2000) + '\n…';
+    if (code) {
+      html += '<details style="margin-top:var(--sp-3)" open><summary style="cursor:pointer;font-weight:600;font-size:12px;color:var(--text-3)">Concept Info</summary><pre style="font-size:11px;color:var(--text-2);margin-top:var(--sp-2);padding:var(--sp-3);background:var(--surface-2);border-radius:var(--r-sm);border:1px solid var(--border)">' + esc(bodyPreview) + '</pre></details>';
+    } else {
+      html = '<pre><code class="language-' + lang + '">' + esc(body) + '</code></pre>';
+    }
+  }
+  if (!html) return;
+  qs('code-panel-source').innerHTML = html;
   qs('code-panel-path').textContent = c.resource || '';
   qs('code-panel').classList.add('open');
   qs('code-panel-backdrop').style.display = 'block';
@@ -965,7 +979,14 @@ var _currentCodeId = '';
 function switchCodeTab(tab) {
   document.querySelectorAll('.code-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
   document.querySelectorAll('.code-tab-pane').forEach(function(p) { p.classList.toggle('active', p.id === 'code-panel-' + tab); });
-  if (tab === 'parse') renderParseTree(_currentCodeId);
+  if (tab === 'parse') showParseTreePrompt(_currentCodeId);
+}
+
+var _parseTreeLoaded = {};
+function showParseTreePrompt(id) {
+  if (_parseTreeLoaded[id]) return;
+  var container = qs('code-panel-parse');
+  container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:var(--sp-4);padding:var(--sp-8)"><p style="color:var(--text-3);text-align:center;font-size:14px">Parse source code with tree-sitter to see the full AST</p><button onclick="renderParseTree(\'' + id.replace(/'/g,"\\'") + '\');this.disabled=true;this.textContent=\'Loading…\'" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;font-weight:600;font-size:13px">Parse</button></div>';
 }
 
 // ---- Tree-sitter WASM Parser ----
@@ -1063,7 +1084,7 @@ function toggleParseNode(el) {
 async function renderParseTree(id) {
   var container = qs('code-panel-parse');
   if (!id) return;
-  if (container.dataset.renderedFor === id) return;
+  if (_parseTreeLoaded[id]) return;
 
   var c = conceptCache[id] || __nodeById[id];
   if (!c) { container.innerHTML = '<div class="empty-note">No concept data.</div>'; return; }
@@ -1129,11 +1150,7 @@ async function renderParseTree(id) {
       return line;
     }
 
-    container.innerHTML = renderNamed(root, 0);
-    container.dataset.renderedFor = id;
-    container.querySelectorAll('.parse-node').forEach(function(n) {
-      if (n.dataset.depth > 3) n.classList.add('collapsed');
-    });
+    container.innerHTML = renderNamed(root, 0) + '<div style="margin-top:var(--sp-3);text-align:center"><button onclick="delete _parseTreeLoaded[\'' + id.replace(/'/g,"\\'") + '\'];showParseTreePrompt(\'' + id.replace(/'/g,"\\'") + '\')" style="font-size:11px;padding:4px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer">Re-parse</button></div>';
   } catch(e) {
     container.innerHTML = '<div class="empty-note">Parse error: ' + esc(e.message) + '</div>';
   }
