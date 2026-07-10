@@ -817,7 +817,6 @@ async function selectConcept(id) {
   qs('detail-header').classList.remove('hidden');
   qs('detail').classList.remove('hidden');
   qs('detail').classList.remove('fade-in'); void qs('detail').offsetWidth; qs('detail').classList.add('fade-in');
-  qs('breadcrumb').innerHTML = '<span class="crumb" onclick="showLanding()">Home</span><span class="sep">›</span><span class="crumb current">' + esc(id) + '</span>';
 
   document.querySelectorAll('.tree-leaf.active').forEach(function(el) { el.classList.remove('active'); });
   var leaf = document.querySelector('.tree-leaf[data-id="' + id.replace(/"/g,'\\"') + '"]');
@@ -829,6 +828,18 @@ async function selectConcept(id) {
   if (!c) { qs('detail-left').innerHTML = '<p>Concept not found.</p>'; return; }
   currentId = id;
   renderDetail(c);
+
+  // Build breadcrumb from concept path segments
+  var parts = id.split('/');
+  var crumbHtml = '<span class="crumb" onclick="showLanding()">Home</span>';
+  if (parts.length > 1) {
+    for (var i = 0; i < parts.length - 1; i++) {
+      var seg = esc(parts[i]);
+      crumbHtml += '<span class="sep">›</span><span class="crumb">' + seg + '</span>';
+    }
+  }
+  crumbHtml += '<span class="sep">›</span><span class="crumb current">' + esc(c.title || parts[parts.length - 1]) + '</span>';
+  qs('breadcrumb').innerHTML = crumbHtml;
 }
 
 function _parseRel(text) {
