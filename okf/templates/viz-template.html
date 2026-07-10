@@ -13,7 +13,6 @@
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-
 :root {
   --bg:#0a0a0f; --surface:#131319; --surface-2:#191922; --surface-3:#1f1f2b;
   --border:#26262f; --border-strong:#34343f;
@@ -32,7 +31,13 @@
   --shadow-lg:0 8px 32px rgba(0,0,0,.35);
   --shadow-glow:0 0 0 1px var(--border), 0 8px 24px rgba(0,0,0,.35);
   --ease:cubic-bezier(.2,.8,.2,1);
+
+  /* Ambient glow for dark theme */
+  --bg-image:
+    radial-gradient(ellipse at 20% 20%, rgba(124,108,255,.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.10) 0%, transparent 50%);
 }
+
 html[data-theme="light"] {
   --bg:#f7f7fb; --surface:#ffffff; --surface-2:#f4f4f9; --surface-3:#ececf4;
   --border:#e3e3ec; --border-strong:#d3d3e0;
@@ -45,20 +50,28 @@ html[data-theme="light"] {
   --shadow-md:0 8px 24px rgba(20,20,40,.08);
   --shadow-lg:0 8px 32px rgba(20,20,40,.08);
   --shadow-glow:0 0 0 1px var(--border), 0 8px 24px rgba(20,20,40,.08);
+
+  --bg-image:
+    radial-gradient(ellipse at 20% 20%, rgba(109,94,252,.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.06) 0%, transparent 50%);
 }
+
 body {
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   color:var(--text); height:100vh; overflow:hidden;
   font-size:14px; line-height:1.5;
-  transition:background .18s var(--ease), color .18s var(--ease);
-  background:radial-gradient(ellipse at 20% 20%, rgba(124,108,255,.07) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.05) 0%, transparent 50%),
-              var(--bg);
+
+  background-color:var(--bg);
+  background-image:var(--bg-image);
+  background-size:150% 150%;
+  animation:breathe 18s var(--ease) infinite alternate;
+
+  transition:background-color .18s var(--ease), color .18s var(--ease);
 }
-html[data-theme="light"] body {
-  background:radial-gradient(ellipse at 20% 20%, rgba(109,94,252,.05) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 80%, rgba(168,85,247,.03) 0%, transparent 50%),
-              var(--bg);
+
+@keyframes breathe {
+  0% { background-position:0% 0%; }
+  100% { background-position:100% 100%; }
 }
 code, pre, .mono { font-family:'JetBrains Mono',ui-monospace,Menlo,monospace; }
 ::selection { background:var(--accent); color:#fff; }
