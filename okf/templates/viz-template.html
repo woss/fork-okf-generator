@@ -907,13 +907,13 @@ async function selectConcept(id) {
   renderDetail(c);
 
   // Pre-populate code tab in background
-  var code = c.code || '';
-  var ext2 = (c.resource || '').split('.').pop();
-  var lang2 = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[ext2] || ext2 || '';
-  if (code) {
-    qs('code-split-source').innerHTML = '<pre><code class="language-' + lang2 + '">' + esc(code) + '</code></pre>';
-    var ce = qs('code-split-source').querySelector('code');
-    if (ce && window.Prism) Prism.highlightElement(ce);
+  var _ext = (c.resource || '').split('.').pop();
+  var _lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[_ext] || _ext || '';
+  var _code = c.code || '';
+  if (_code) {
+    qs('code-split-source').innerHTML = '<pre><code class="language-' + _lang + '">' + esc(_code) + '</code></pre>';
+    var _ce = qs('code-split-source').querySelector('code');
+    if (_ce && window.Prism) Prism.highlightElement(_ce);
   }
   showParseTreePrompt(id);
 
@@ -1000,7 +1000,7 @@ function renderDetail(c) {
   top += '<h2>' + esc(d.title) + '</h2></div>';
   top += '<div id="detail-topbar-right">';
   if (d.resource) top += '<span class="resource">' + esc(d.resource) + '</span>';
-  top += '<span class="vs-btn" onclick="showCodePanel(\'' + d.id.replace(/'/g,"\\'") + '\')">View Code</span>';
+
   top += '</div></div>';
   if (d.description) top += '<p class="desc">' + esc(d.description) + '</p>';
 
@@ -1115,31 +1115,13 @@ function renderDetail(c) {
 }
 
 // ---- Code Panel ----
-function showCodePanel(id) {
-  switchDetailTab('code', document.querySelector('.detail-tab[data-tab="code"]'));
-  var c = conceptCache[id] || __nodeById[id];
-  if (!c) return;
-  var code = c.code || '';
-  var body = c.body || '';
-  var ext = (c.resource || '').split('.').pop();
-  var lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[ext] || ext || '';
-  var sourceContainer = qs('code-split-source');
-  if (code) {
-    sourceContainer.innerHTML = '<pre><code class="language-' + lang + '">' + esc(code) + '</code></pre>';
-  } else if (body) {
-    sourceContainer.innerHTML = '<pre><code>' + esc(body.slice(0, 3000)) + '</code></pre>';
-  } else { return; }
-  var codeEl = sourceContainer.querySelector('code');
-  if (codeEl && window.Prism) Prism.highlightElement(codeEl);
-  showParseTreePrompt(id);
-}
-
 // ---- Code Tab Split ----
 var _parseTreeLoaded = {};
 function showParseTreePrompt(id) {
   if (_parseTreeLoaded[id]) return;
   var container = qs('code-split-parse');
-  container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:var(--sp-4);padding:var(--sp-8)"><p style="color:var(--text-3);text-align:center;font-size:14px">Parse source code with tree-sitter to see the full AST</p><button onclick="renderParseTree(\'' + id.replace(/'/g,"\\'") + '\');this.disabled=true;this.textContent=\'Loading…\'" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);cursor:pointer;font-weight:600;font-size:13px">Parse</button></div>';
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Parsing…</div>';
+  renderParseTree(id);
 }
 
 function switchDetailTab(name, btn) {
