@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for javascript/complex/middleware/auth
 resource: javascript/complex/middleware/auth
-timestamp: '2026-07-11T10:38:08Z'
+timestamp: '2026-07-11T10:43:49Z'
 title: auth
 type: Index
 ---

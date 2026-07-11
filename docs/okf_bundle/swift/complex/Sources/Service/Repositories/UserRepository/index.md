@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for swift/complex/Sources/Service/Repositories/UserRepository
 resource: swift/complex/Sources/Service/Repositories/UserRepository
-timestamp: '2026-07-11T10:38:08Z'
+timestamp: '2026-07-11T10:43:49Z'
 title: UserRepository
 type: Index
 ---

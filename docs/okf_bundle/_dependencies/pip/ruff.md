@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - ecosystem:pip
-- manifest:requirements.txt
 - version:>=0.1.0
-timestamp: '2026-07-11T10:37:38Z'
+- manifest:requirements.txt
+timestamp: '2026-07-11T10:43:13Z'
 title: ruff
 type: Dependency
 ---

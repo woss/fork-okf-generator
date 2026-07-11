@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for java/complex/service
 resource: java/complex/service
-timestamp: '2026-07-11T10:38:08Z'
+timestamp: '2026-07-11T10:43:49Z'
 title: service
 type: Index
 ---
