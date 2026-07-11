@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for swift/complex/Sources/Service/Models/Paginated
 resource: swift/complex/Sources/Service/Models/Paginated
-timestamp: '2026-07-11T07:33:11Z'
+timestamp: '2026-07-11T08:10:34Z'
 title: Paginated
 type: Index
 ---

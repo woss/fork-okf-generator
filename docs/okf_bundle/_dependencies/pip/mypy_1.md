@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- ecosystem:pip
 - version:>=1.7.0
 - manifest:pyproject.toml
-timestamp: '2026-07-11T07:32:28Z'
+- ecosystem:pip
+timestamp: '2026-07-11T08:10:02Z'
 title: mypy
 type: Dependency
 ---
