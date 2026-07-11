@@ -1013,14 +1013,16 @@ function renderDetail(c) {
   top += '<span class="type-badge" style="background:' + color + '18;color:' + color + '"><span class="dot" style="background:' + color + '"></span>' + esc(d.type) + '</span>';
   top += '<h2>' + esc(d.title) + '</h2></div>';
   top += '<div id="detail-topbar-right">';
+  // Right side: resource path + visibility + decorators
   if (d.resource) top += '<span class="resource">' + esc(d.resource) + '</span>';
-
+  var visDec = [];
+  if (d.visibility && d.visibility.length) visDec.push('<span class="meta-tag meta-tag-vis"><span class="label">visibility:</span> ' + esc(d.visibility.join(', ')) + '</span>');
+  if (d.decorators && d.decorators.length) visDec.push('<span class="meta-tag meta-tag-vis"><span class="label">decorators:</span> ' + esc(d.decorators.join(', ')) + '</span>');
+  if (visDec.length) top += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + visDec.join('') + '</div>';
   top += '</div></div>';
   if (d.description) top += '<p class="desc">' + esc(d.description) + '</p>';
 
   var md = [];
-  if (d.visibility && d.visibility.length) md.push({l:'visibility', v:d.visibility.join(', '), c:'meta-tag-vis'});
-  if (d.decorators && d.decorators.length) md.push({l:'decorators', v:d.decorators.join(', ')});
   if (d.inheritance && d.inheritance.length) md.push({l:'inherits', v:d.inheritance.join(', ')});
   if (d.type_params && d.type_params.length) md.push({l:'generics', v:d.type_params.join(', ')});
   if (md.length) {
