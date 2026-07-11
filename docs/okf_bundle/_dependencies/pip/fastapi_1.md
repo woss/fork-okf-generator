@@ -14,7 +14,7 @@ tags:
 - ecosystem:pip
 - manifest:requirements.txt
 - version:==0.104.1
-timestamp: '2026-07-11T08:10:02Z'
+timestamp: '2026-07-11T09:01:10Z'
 title: fastapi
 type: Dependency
 ---
