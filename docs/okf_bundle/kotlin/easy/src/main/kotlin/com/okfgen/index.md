@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for kotlin/easy/src/main/kotlin/com/okfgen
 resource: kotlin/easy/src/main/kotlin/com/okfgen
-timestamp: '2026-07-10T20:32:13Z'
+timestamp: '2026-07-11T06:56:50Z'
 title: okfgen
 type: Index
 ---
