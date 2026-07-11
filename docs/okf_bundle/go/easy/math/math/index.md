@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for go/easy/math/math
 resource: go/easy/math/math
-timestamp: '2026-07-11T09:17:15Z'
+timestamp: '2026-07-11T09:19:52Z'
 title: math
 type: Index
 ---

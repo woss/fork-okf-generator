@@ -14,7 +14,7 @@ tags:
 - manifest:Gemfile
 - version:~> 2.7
 - ecosystem:rubygems
-timestamp: '2026-07-11T09:16:36Z'
+timestamp: '2026-07-11T09:19:16Z'
 title: json
 type: Dependency
 ---

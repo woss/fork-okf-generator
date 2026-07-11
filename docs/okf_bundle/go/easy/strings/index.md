@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for go/easy/strings
 resource: go/easy/strings
-timestamp: '2026-07-11T09:17:15Z'
+timestamp: '2026-07-11T09:19:52Z'
 title: strings
 type: Index
 ---
