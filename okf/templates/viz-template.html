@@ -426,6 +426,15 @@ html[data-theme="light"] #zoomctl { background:rgba(255,255,255,.75); border-col
 #cosmos-info-card-body p { font-size:12px; color:var(--text-2); line-height:1.5; margin-bottom:8px; }
 #ic-path { font-size:10.5px; color:var(--text-3); font-family:'JetBrains Mono',monospace; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:6px; padding:4px 8px; margin-bottom:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #ic-rels { display:flex; gap:6px; margin-bottom:10px; }
+.cosmos-mode { display:flex; border-radius:8px; background:rgba(255,255,255,.06); padding:2px; gap:1px; }
+html[data-theme="light"] .cosmos-mode { background:rgba(0,0,0,.04); }
+.mode-btn {
+  font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; user-select:none;
+  background:transparent; border:none; color:var(--text-3); transition:all .15s var(--ease);
+  font-family:inherit; white-space:nowrap;
+}
+.mode-btn:hover { color:var(--text-2); }
+.mode-btn.active { color:var(--text); background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.12); }
 .rel-stat { flex:1; text-align:center; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:8px; padding:6px 4px; }
 .rel-stat .n { font-size:14px; font-weight:700; color:var(--accent-strong); }
 .rel-stat .l { font-size:9.5px; color:var(--text-3); text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
@@ -437,6 +446,12 @@ html[data-theme="light"] #zoomctl { background:rgba(255,255,255,.75); border-col
 }
 .detail-btn:hover { background:var(--accent); color:#fff; }
 .detail-btn svg { width:13px; height:13px; }
+#cosmos-labels { position:absolute; inset:0; z-index:12; pointer-events:none; }
+.cosmos-label {
+  position:absolute; font-size:9px; font-weight:500; color:rgba(255,255,255,.7);
+  text-shadow:0 1px 4px rgba(0,0,0,.9); white-space:nowrap; transform:translate(-50%,-14px);
+  pointer-events:none; transition:opacity .2s var(--ease);
+}
 #cosmos-toast {
   position:absolute; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); z-index:60;
   background:var(--surface); border:1px solid var(--border-strong); color:var(--text); font-size:12.5px;
@@ -659,6 +674,7 @@ html[data-theme="light"] .detail-tab:hover { background:rgba(0,0,0,.04); }
       <div id="cosmos-stage">
         <div id="cosmos-container"></div>
         <div id="cluster-labels"></div>
+        <div id="cosmos-labels"></div>
 
         <div id="cosmos-loading">
           <div class="spinner"></div>
@@ -670,6 +686,13 @@ html[data-theme="light"] .detail-tab:hover { background:rgba(0,0,0,.04); }
         <div id="status-pill"><span class="n" id="status-n">0</span><span> concepts </span><span style="opacity:.4">·</span><span> </span><span class="n" id="status-e">0</span><span> edges</span></div>
 
         <div id="cosmos-toolbar">
+          <div class="cosmos-mode">
+            <button class="mode-btn active" data-mode="explore" onclick="cosmosSetMode('explore',this)">Explore</button>
+            <button class="mode-btn" data-mode="paths" onclick="cosmosSetMode('paths',this)">Paths</button>
+            <button class="mode-btn" data-mode="labels" onclick="cosmosSetMode('labels',this)">Labels</button>
+            <button class="mode-btn" data-mode="focus" onclick="cosmosSetMode('focus',this)">Focus</button>
+          </div>
+          <div class="toolbar-sep"></div>
           <div class="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
             <input id="cosmos-search" type="text" placeholder="Search concepts…">
@@ -1556,6 +1579,8 @@ var _cosmosNodes = [];
 var _cosmosEdges = [];
 var _cosmosDomainNames = [];
 var _cosmosN = 0;
+var _cosmosMode = 'explore';
+var _cosmosLabels = [];
 var _cosmosDomIdx = {};
 var _cosmosPointColors = null;
 
@@ -1717,6 +1742,22 @@ async function loadCosmosExplore() {
     _cosmosGraph.setPointClusters(clusters);
     _cosmosGraph.render();
 
+    // Pre-create label overlays for Labels mode (hidden by default)
+    var labelContainer = qs('cosmos-labels');
+    _cosmosLabels = _cosmosNodes.map(function(n) {
+      var el = document.createElement('div');
+      el.className = 'cosmos-label';
+      el.textContent = n.title || '';
+      el.style.display = 'none';
+      labelContainer.appendChild(el);
+      return el;
+    });
+
+    // If huge bundle, disable physics for performance
+    if (_cosmosN > 5000) {
+      try { _cosmosGraph.setConfigPartial({ simulationRepulsion: 0, simulationGravity: 0, simulationCluster: 0, simulationLinkSpring: 0 }); } catch(e) {}
+    }
+
     // Domain labels
     var labelRoot = qs('cluster-labels');
     labelRoot.innerHTML = '';
@@ -1740,18 +1781,46 @@ async function loadCosmosExplore() {
 function _cosmosUpdateLabels() {
   if (!_cosmosGraph) return;
   try {
+    // Update cluster labels
     var positions = _cosmosGraph.getClusterPositions();
-    if (!positions || !positions.length) return;
-    var els = qs('cluster-labels').children;
-    for (var i = 0; i < _cosmosDomainNames.length && i < els.length; i++) {
-      var x = positions[i*2], y = positions[i*2+1];
-      if (x === undefined || y === undefined) continue;
-      var screen = _cosmosGraph.spaceToScreenPosition([x, y]);
-      els[i].style.left = screen[0] + 'px';
-      els[i].style.top = (screen[1] - 40) + 'px';
+    if (positions && positions.length) {
+      var els = qs('cluster-labels').children;
+      for (var i = 0; i < _cosmosDomainNames.length && i < els.length; i++) {
+        var x = positions[i*2], y = positions[i*2+1];
+        if (x === undefined || y === undefined) continue;
+        var screen = _cosmosGraph.spaceToScreenPosition([x, y]);
+        els[i].style.left = screen[0] + 'px';
+        els[i].style.top = (screen[1] - 40) + 'px';
+      }
+    }
+    // Update point labels (Labels mode)
+    if (_cosmosMode === 'labels' && _cosmosLabels.length) {
+      for (var li = 0; li < Math.min(_cosmosN, _cosmosLabels.length); li++) {
+        var sp = _cosmosGraph.spaceToScreenPosition(_cosmosGraph.getPointPosition(li));
+        if (sp) { _cosmosLabels[li].style.left = sp[0] + 'px'; _cosmosLabels[li].style.top = sp[1] + 'px'; }
+      }
     }
   } catch(e) {}
 }
+
+function cosmosSetMode(mode, btn) {
+  _cosmosMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  _cosmosClearFocus();
+  // Toggle point labels
+  var showLabels = mode === 'labels';
+  _cosmosLabels.forEach(function(el) { el.style.display = showLabels ? 'block' : 'none'; });
+  // Reset hover/click effects per mode
+  try {
+    var cfg = {};
+    if (mode === 'focus') { cfg.renderHoveredPointRing = false; cfg.pointGreyoutOpacity = 0.15; }
+    else { cfg.renderHoveredPointRing = true; cfg.pointGreyoutOpacity = 0.1; }
+    _cosmosGraph.setConfigPartial(cfg);
+  } catch(e) {}
+  _cosmosUpdateFilter();
+}
+window.cosmosSetMode = cosmosSetMode;
 function _cosmosHoverPreview(idx) {
   if (_cosmosClickedIdx !== null) return;
   try {
@@ -1764,12 +1833,52 @@ function _cosmosClearHover() {
   if (_cosmosClickedIdx !== null) return;
   try { _cosmosGraph.setConfigPartial({ outlinedPointIndices: undefined, highlightedLinkIndices: undefined }); } catch(e) {}
 }
+function _cosmosBFS(start, maxHops) {
+  // Breadth-first search to find all nodes within maxHops of start
+  var visited = new Set([start]), queue = [[start, 0]];
+  while (queue.length) {
+    var cur = queue.shift();
+    var ci = cur[0], dist = cur[1];
+    if (dist >= maxHops) continue;
+    _cosmosEdges.forEach(function(l) {
+      var si = _cosmosNodes.findIndex(function(n) { return (n.id || n.concept_id) === l.source; });
+      var ti = _cosmosNodes.findIndex(function(n) { return (n.id || n.concept_id) === l.target; });
+      [si, ti].forEach(function(ni) {
+        if (ni >= 0 && !visited.has(ni)) { visited.add(ni); queue.push([ni, dist + 1]); }
+      });
+    });
+  }
+  return Array.from(visited);
+}
+
 function _cosmosOnClick(idx, pos) {
+  if (_cosmosMode === 'focus') {
+    // Focus mode: zoom to node, dim rest
+    try { _cosmosGraph.fitView(300, { padding: 0.3, nodeFilter: function(ni) { return ni === idx; } }); } catch(e) {}
+    var hood = _cosmosBFS(idx, 2);
+    var hoodSet = new Set(hood);
+    if (!_cosmosPointColors) return;
+    var working = new Float32Array(_cosmosPointColors);
+    for (var fi = 0; fi < _cosmosN; fi++) {
+      if (!hoodSet.has(fi)) working[fi*4+3] = 0.05;
+    }
+    try { _cosmosGraph.setPointColors(working); _cosmosGraph.render(); } catch(e) { console.error('focus dim failed', e); }
+    _cosmosClickedIdx = idx;
+    _cosmosOpenCard(idx, pos);
+    return;
+  }
   if (_cosmosClickedIdx === idx) { _cosmosClearFocus(); return; }
   _cosmosClickedIdx = idx;
   try {
-    var n = _cosmosGraph.getNeighboringPointIndices(idx);
-    var hood = [idx].concat(n);
+    var n, hood;
+    if (_cosmosMode === 'paths') {
+      // Paths mode: show all nodes up to 3 hops
+      hood = _cosmosBFS(idx, 3);
+    } else {
+      // Explore mode: show direct neighbors
+      n = _cosmosGraph.getNeighboringPointIndices(idx);
+      hood = [idx].concat(n);
+    }
     _cosmosGraph.setConfigPartial({ focusedPointIndex: idx, highlightedPointIndices: hood, highlightedLinkIndices: _cosmosGraph.getConnectedLinkIndices(hood), outlinedPointIndices: undefined });
   } catch(e) {
     try { _cosmosGraph.setConfigPartial({ focusedPointIndex: idx }); } catch(e2) {}
@@ -1781,6 +1890,10 @@ function _cosmosClearFocus() {
   try {
     _cosmosGraph.setConfigPartial({ focusedPointIndex: undefined, highlightedPointIndices: undefined, highlightedLinkIndices: undefined, outlinedPointIndices: undefined });
   } catch(e) {}
+  // Reset colors if focus mode dimmed them
+  if (_cosmosMode === 'focus' && _cosmosPointColors) {
+    try { _cosmosGraph.setPointColors(_cosmosPointColors); _cosmosGraph.render(); } catch(e) {}
+  }
   _cosmosUpdateFilter();
   _cosmosCloseCard();
 }
