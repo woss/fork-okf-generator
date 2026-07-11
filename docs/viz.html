@@ -52,7 +52,8 @@ html[data-theme="light"] {
   --bg-image: url("bg-light.png");
 }
 html[data-theme="light"] .stat-card {
-  background:rgba(255,255,255,.6); border:1px solid rgba(0,0,0,.06);
+  background:rgba(255,255,255,.55); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(0,0,0,.05);
 }
 html[data-theme="light"] .stat-card::after {
   box-shadow:inset 0 1px 1px rgba(255,255,255,1);
@@ -101,9 +102,10 @@ button, select, input { font:inherit; }
 }
 
 html[data-theme="light"] #topbar-inner {
-  background:rgba(0,0,0,.05);
-  border-color:rgba(0,0,0,.08);
-  box-shadow:0 4px 32px rgba(20,20,40,.06), 0 1px 4px rgba(20,20,40,.04);
+  background:rgba(255,255,255,.5);
+  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  border-color:rgba(0,0,0,.06);
+  box-shadow:0 4px 32px rgba(20,20,40,.08), 0 1px 4px rgba(20,20,40,.04);
 }
 .nav-seg {
   display:flex; border-radius:10px; background:rgba(255,255,255,.06); padding:3px; gap:2px;
@@ -163,8 +165,9 @@ html[data-theme="light"] #breadcrumb {
 }
 
 html[data-theme="light"] #sidebar {
-  background:rgba(255,255,255,.78);
-  border-color:rgba(0,0,0,.06);
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  border-color:rgba(0,0,0,.05);
 }
 #main { flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
 #main.wide { padding:0; }
@@ -177,7 +180,8 @@ html[data-theme="light"] #sidebar {
   box-shadow:var(--shadow-md);
 }
 html[data-theme="light"] #browse-content {
-  background:rgba(255,255,255,.75);
+  background:rgba(255,255,255,.5);
+  backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
   border-color:rgba(0,0,0,.05);
 }
 #sidebar-resize {
@@ -351,7 +355,11 @@ html[data-theme="light"] #detail-header {
 #code-split-source pre {
   font-size:12px; line-height:1.6; white-space:pre-wrap; tab-size:2; overflow-x:auto;
   color:var(--text); font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  background:transparent !important; margin:0;
 }
+#code-split-source pre code { background:transparent !important; }
+html[data-theme="light"] #code-split-source pre[class*="language-"],
+html[data-theme="light"] #code-split-source code[class*="language-"] { background:transparent !important; }
 
 #detail-tab-bar { display:flex; gap:0; margin:0 0 var(--sp-4); padding:var(--sp-1); background:rgba(255,255,255,.04); border-radius:var(--r-md); border:1px solid rgba(255,255,255,.06); width:fit-content; }
 html[data-theme="light"] #detail-tab-bar { background:rgba(0,0,0,.03); border-color:rgba(0,0,0,.06); }
