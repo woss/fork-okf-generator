@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- version:>=0.104.0
 - ecosystem:pip
+- version:>=0.104.0
 - manifest:pyproject.toml
-timestamp: '2026-07-11T06:56:10Z'
+timestamp: '2026-07-11T07:32:28Z'
 title: fastapi
 type: Dependency
 ---

@@ -11,10 +11,10 @@ tags:
 - domain:complex
 - git:branch:main
 - git:repo:okf-generator
-- manifest:requirements.txt
 - ecosystem:pip
 - version:==0.25.2
-timestamp: '2026-07-11T06:56:10Z'
+- manifest:requirements.txt
+timestamp: '2026-07-11T07:32:28Z'
 title: httpx
 type: Dependency
 ---

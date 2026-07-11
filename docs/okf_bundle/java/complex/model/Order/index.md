@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for java/complex/model/Order
 resource: java/complex/model/Order
-timestamp: '2026-07-11T06:56:50Z'
+timestamp: '2026-07-11T07:33:11Z'
 title: Order
 type: Index
 ---
