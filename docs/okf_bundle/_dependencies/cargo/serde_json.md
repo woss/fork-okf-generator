@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - manifest:Cargo.toml
-- ecosystem:cargo
 - version:1.0
-timestamp: '2026-07-12T09:19:36Z'
+- ecosystem:cargo
+timestamp: '2026-07-12T11:29:36Z'
 title: serde_json
 type: Dependency
 ---

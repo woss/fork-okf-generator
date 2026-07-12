@@ -12,9 +12,9 @@ tags:
 - git:branch:main
 - git:repo:okf-generator
 - version:>=2.5.0
-- manifest:pyproject.toml
 - ecosystem:pip
-timestamp: '2026-07-12T09:19:36Z'
+- manifest:pyproject.toml
+timestamp: '2026-07-12T11:29:36Z'
 title: pydantic
 type: Dependency
 ---
