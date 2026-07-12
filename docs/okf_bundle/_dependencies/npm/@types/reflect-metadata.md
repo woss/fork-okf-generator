@@ -14,7 +14,7 @@ tags:
 - version:^0.1.0
 - ecosystem:npm
 - manifest:package.json
-timestamp: '2026-07-12T07:14:59Z'
+timestamp: '2026-07-12T08:49:14Z'
 title: '@types/reflect-metadata'
 type: Dependency
 ---

@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for csharp/complex/Services/UserService
 resource: csharp/complex/Services/UserService
-timestamp: '2026-07-12T07:15:35Z'
+timestamp: '2026-07-12T08:49:46Z'
 title: UserService
 type: Index
 ---
