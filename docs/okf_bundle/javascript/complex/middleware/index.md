@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for javascript/complex/middleware
 resource: javascript/complex/middleware
-timestamp: '2026-07-12T20:40:49Z'
+timestamp: '2026-07-12T20:42:30Z'
 title: middleware
 type: Index
 ---

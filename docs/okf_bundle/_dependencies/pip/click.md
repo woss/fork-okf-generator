@@ -14,7 +14,7 @@ tags:
 - ecosystem:pip
 - version:==8.1.7
 - manifest:requirements.txt
-timestamp: '2026-07-07T06:58:41Z'
+timestamp: '2026-07-12T20:41:55Z'
 title: click
 type: Dependency
 ---

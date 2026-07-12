@@ -14,7 +14,7 @@ tags:
 - manifest:package.json
 - version:^9.0.2
 - ecosystem:npm
-timestamp: '2026-07-07T06:58:41Z'
+timestamp: '2026-07-12T20:41:55Z'
 title: jsonwebtoken
 type: Dependency
 ---

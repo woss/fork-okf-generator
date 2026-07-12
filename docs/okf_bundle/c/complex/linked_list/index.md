@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for c/complex/linked_list
 resource: c/complex/linked_list
-timestamp: '2026-07-12T20:40:49Z'
+timestamp: '2026-07-12T20:42:30Z'
 title: linked_list
 type: Index
 ---

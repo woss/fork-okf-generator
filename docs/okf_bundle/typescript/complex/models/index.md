@@ -1,7 +1,7 @@
 ---
 description: Knowledge index for typescript/complex/models
 resource: typescript/complex/models
-timestamp: '2026-07-12T20:40:49Z'
+timestamp: '2026-07-12T20:42:30Z'
 title: models
 type: Index
 ---
