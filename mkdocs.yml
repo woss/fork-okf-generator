@@ -82,6 +82,7 @@ nav:
   - Core Concepts:
       - Bundle Format: user-guide/bundle-format.md
       - Language Coverage: user-guide/languages-and-manifests.md
+      - Domain Classification: user-guide/domain-classification.md
       - LLM Enrichment: user-guide/enrichment.md
   - Using OKF:
       - CLI Reference: user-guide/cli-reference.md
