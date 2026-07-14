@@ -1,56 +1,94 @@
-# OKF Generator — Project Context
+# OKF Generator
 
-## What is this?
+Generates OKF v0.2 knowledge bundles from codebases. 17 languages, 12 manifest formats, ~100× fewer tokens than raw source.
 
-Generates OKF v0.2 knowledge bundles (extended dialect of Google's OKF v0.1) from codebases. Scans source code (7 languages via AST/tree-sitter + SQL via regex) and manifest files (12 formats) into structured markdown that AI agents can read.
-
-## Quick Commands
+## Quick commands
 
 ```bash
-pip install -e ".[dev]"      # editable install
-pytest tests/ -q              # 70+ unit tests (all pass)
-okf generate ./src ./bundle   # generate a bundle
-okf lookup <Name>              # look up a concept
+pip install -e ".[dev]"       # editable install
+pytest tests/ -q               # 301 tests
+okf generate ./src ./bundle    # generate bundle
+okf lookup <Name>              # look up concept
+okf enrich --lsp               # LSP enrichment (needs pyright on $PATH)
 ```
 
 ## Architecture
 
 ```
 okf/
-├── generator.py         # Scanner (7 langs + SQL) + bundle writer
-├── manifest_scanner.py  # 12 manifest parsers (pip, npm, cargo, go, etc.)
-├── lookup.py            # Concept search with cache
-├── pairs.py             # Training data pipeline
-└── cli.py               # CLI dispatch
+├── enrich/          # Enricher contract → LspEnricher + LlmEnricher
+│   ├── base.py      # Enricher ABC (start/run/stop), EnrichResult
+│   ├── lsp.py       # LspEnricher — hand-rolled LSP client over stdio
+│   ├── llm.py       # LlmEnricher — base/deep/security LLM modes
+│   ├── _lsp_map.py  # LSP server registry (pyright, gopls, rust-analyzer, typescript)
+│   └── _llm_prompts.py
+├── cli.py            # 24 commands
+├── generator.py      # Core scanner + bundle writer
+├── linker.py          # Cross-reference pass (deps + call graph)
+├── parsers/           # 17 language parsers
+│   ├── base.py       # Concept dataclass + TreeSitterParser ABC
+│   └── python.js go java rust ruby c cpp csharp dart kotlin php scala julia swift sql yaml
+├── domains/           # Domain classification engine
+├── lsp.py             # `okf lsp status|resolve|map` CLI
+├── mcp_server.py      # MCP server (stdio/HTTP)
+├── visualize.py       # HTML graph explorer (Cytoscape.js + tree-sitter WASM)
+├── config.py          # Config from .okfconfig + env
+└── pairs.py           # JSONL training pair generator
 ```
 
-- Concepts are `@dataclass Concept` objects with type/title/description/resource/tags/timestamp/signature/docstring/params/returns/methods/body_extra
-- Dependency concepts use `body_extra` with ecosystem/version_constraint/dev_dependency/source_manifest
-- Tags follow standard: `lang:`, `type:`, `module:`, `domain:`, `git:`, `ecosystem:`, `manifest:`, `version:`
-- Lookup cache: `.okf_lookup_cache.json` auto-generated, mtime-invalidated
+## Enricher contract
 
-## Test Strategy
+```python
+class Enricher(ABC):
+    def start(self, bundle_dir, concepts) -> bool    # prepare; return False to skip
+    def run(self, bundle_dir, concepts) -> EnrichResult  # execute; never raise on partial failure
+    def stop(self) -> None                             # always safe to call
+```
 
-| Layer | Tool | Count |
-|-------|------|-------|
-| Unit | `pytest tests/` | 70+ |
-| Integration | `TEST.md` | All CLI commands end-to-end |
-| Release smoke | CI in `publish.yml` | Installs published wheel, generates, looks up |
+LspEnricher and LlmEnricher both implement this. Wrapped in try/finally by `run_enrich()`.
 
-## Key Files
+## LSP enrichment
 
-- `AGENTS.md` — instructions for AI agents
-- `TEST.md` — full integration test spec
+```
+okf enrich --lsp                # LSP only
+okf enrich --full               # LSP + LLM deep (shortcut)
+okf enrich --lsp --llm          # LSP + LLM base
+okf lsp status                  # table: which servers installed
+okf lsp resolve file.py:42:5    # one-shot definition lookup
+```
+
+4 servers mapped: pyright (Python), gopls (Go), rust-analyzer (Rust), typescript-language-server (TS/JS).
+Hand-rolled JSON-RPC client over stdio (~150 lines). 3s startup timeout per server.
+
+## LLM enrichment
+
+```
+okf enrich --llm               # base mode (description/docstring, no source code sent)
+okf enrich --llm --mode deep   # deep (reads source body)
+okf enrich --llm --mode security
+```
+
+All 4 prompts in `_llm_prompts.py`. Shared `_SECURITY_FIELD_SPEC`. Body truncated at 120 lines.
+
+## Linker
+
+Runs after scan, before write. Two passes:
+1. `link_dependencies()` — import statements → manifest dependency edges
+2. `link_calls()` — function calls → caller/callee edges (conservative: same-file → same-domain → unique → ambiguous)
+
+## Project files
+
+- `AGENTS.md` — agent instructions
+- `TEST.md` — integration test spec
 - `RELEASE.md` — release checklist
-- `CONTRIBUTING.md` — contributor guide
-- `.github/workflows/publish.yml` — CI/CD pipeline
+- `FUTURE.md` — roadmap (SAST enrichment, MkDocs replacement, IDE plugins)
+- `CHANGELOG.md` — versions
+- `tests/` — 301 tests (pytest), 17-phase test.sh, realworld fixtures
 
-## Future Plans
+## Config
 
-See `FUTURE.md` — 5 prioritized features ordered by effort (CI/CD auto-publish → v0.2 schema → agent REPL → WASM viz → IDE plugins).
+`.okfconfig` or `~/.config/okf/config.json`. Sections: `llm`, `providers`, `enrich`, `serve`, `lookup`, `mcp`, `pairs`.
 
-## Release Workflow
+## Version
 
-1. Run `TEST.md` to verify everything works
-2. Follow `RELEASE.md` to bump version, update changelog, tag, and push
-3. CI builds, publishes to PyPI, runs smoke test, creates GitHub Release
+0.1.48 — MIT License — OKF v0.2 schema
