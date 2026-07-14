@@ -1,92 +1,241 @@
 # Future Plans
 
-Ordered by development effort (easiest first).
+Ordered by **impact**, not effort. Items at the top deliver the most value per build hour.
 
 ---
 
 ## ~~1. CI/CD Realworld Bundle Auto-Publish~~ ✅ Done (v0.1.44)
 
-**What was done:** Extended `.github/workflows/demo-viz.yml` to generate `docs/okf_bundle/` from `tests/fixtures/realworld/` on every push to `main`. Added bundle verification (≥10 concept files). Landing page "Try it live" section now has a "Live Bundle" link. Updated `.gitignore` to un-ignore `docs/okf_bundle/`.
+Extended `.github/workflows/demo-viz.yml` to generate `docs/okf_bundle/` from `tests/fixtures/realworld/` on every push to `main`. Added bundle verification (≥10 concept files). Landing page "Try it live" section now has a "Live Bundle" link. Updated `.gitignore` to un-ignore `docs/okf_bundle/`.
 
 ---
 
 ## ~~2. User-Facing Auto-Bundle Template~~ ✅ Done (v0.1.44)
 
-**What was done:** Created `docs/examples/okf-auto-bundle.yml` — a ready-to-copy workflow. Updated `docs/user-guide/ci-cd.md` with the full template and explanation. Updated README link to point to new CI/CD doc.
+Created `docs/examples/okf-auto-bundle.yml` — a ready-to-copy workflow. Updated `docs/user-guide/ci-cd.md` with the full template and explanation. Updated README link to point to new CI/CD doc.
 
 ---
 
 ## ~~3. v0.2 Schema Bump~~ ✅ Done (v0.1.44)
 
-**What was done:**
-- Bumped `"0.1"` → `"0.2"` in all generator emission points (4 locations)
-- Added `okf_version`, `concept_id`, `language`, `status` to every concept frontmatter
-- Added `status` field to `Concept` dataclass
-- Merged `## Related`, `## Calls`, `## Called By` sections into a single `## Relationships` table with typed edges (related, calls, called_by, related (AI))
-- Updated `lookup.py` and `pairs.py` to read `relationships` section (with v0.1 fallback)
-- Created `okf migrate v0.1-to-v0.2` command with `--dry-run` support
-- Updated `bundle-format.md` doc with v0.2 schema
+Bumped `"0.1"` → `"0.2"` in all generator emission points. Added `okf_version`, `concept_id`, `language`, `status` to every concept frontmatter. Merged relationship sections into a single `## Relationships` table with typed edges. Created `okf migrate v0.1-to-v0.2`.
 
 ---
 
 ## ~~4. `okf agent` REPL~~ ✅ Done (v0.1.44)
 
-**What was done:**
-- Created `okf/agent.py` — interactive REPL with rich card output, slash commands (`/lookup`, `/source`, `/calls`, `/called-by`, `/related`, `/save`, `/export`, `/history`, `/clear`, `/resume`, `/sessions`)
-- Persistent sessions saved to `~/.okf/sessions/ses_*.json`
-- LLM-powered Q&A with context-aware follow-ups (reuses `_search_context` + `_ask_llm` from `okf/ask.py`)
-- Session export to JSON or Markdown
-- Auto-save every 4 exchanges
-- Wired into CLI as `okf agent`
-
-**What it unlocks:** Replaces the "grep files → read sources" loop entirely. Agent (human or AI) stays inside `okf` for the whole exploration flow.
+Interactive REPL with slash commands, persistent sessions, LLM-powered Q&A.
 
 ---
 
-## ~~4. Tree-sitter WASM in Viz~~ ✅ Done (v0.1.44)
+## ~~5. Tree-sitter WASM in Viz~~ ✅ Done (v0.1.44)
 
-**What was done:**
-- Added `web-tree-sitter` + per-language WASM parsers loaded from jsDelivr CDN (10 languages: python, js, ts, ruby, rust, go, java, cpp, c, php; remaining 7 fall back to source view)
-- Code panel now has a "Source" / "Parse Tree" tab switcher
-- Parse Tree renders a collapsible named AST tree with syntax-colored tokens
-- Deeply nested nodes auto-collapse for readability
-- Falls back gracefully if WASM fails to load (network issue, unsupported lang)
-- All 242 tests pass
-
-**What it unlocks:** Viz is no longer a static snapshot. It's an interactive AST browser — click any concept, switch to Parse Tree, see the full tree-sitter parse tree with collapsible scopes and syntax highlighting. Works offline after first load (CDN-cached WASM).
+Interactive AST browser in the visualization — click any concept, switch to Parse Tree, see the full tree-sitter parse tree with collapsible scopes.
 
 ---
 
-## 5. SAST Enrichment (`okf enrich --sast`)
+## ~~6. LSP Enrichment~~ ✅ Done (v0.1.48)
 
+Compiler-accurate caller/callee resolution via local language servers. 4 servers mapped: pyright, gopls, rust-analyzer, typescript-language-server. `okf lsp status|resolve|map` subcommands. New `okf/enrich/` package with pluggable Enricher contract.
+
+---
+
+## 1. Incremental Generation (`okf update`)
+
+**Impact:** Very High  
+**Effort:** Medium (3–5 days)
+
+**Problem:** `okf generate` rescans every file every time. On a 50,000-file monorepo, this takes minutes. Most runs change 5-10 files.
+
+**Solution:** `okf update` hashes files, detects changes, regenerates only affected concepts, updates the graph and bundle in-place.
+
+```
+okf update                          # incremental (default)
+okf update --force                  # full re-scan
+okf update --watch                  # watch mode, continuous
+```
+
+**Design:** Store file mtime + content hash per concept in a manifest file (`.okf/bundle.manifest.json`). On `okf update`, diff against current file state, re-parse changed files, re-run linker on affected subgraph, write only changed `.md` files.
+
+**What it unlocks:** CI-ready incremental builds. Bundles stay fresh without the full-scan cost. Watch mode enables editor integration.
+
+---
+
+## 2. Configurable LSP Providers
+
+**Impact:** High  
+**Effort:** Low (1 day)
+
+**Problem:** `_lsp_map.py` is hardcoded. Users who want a different LSP server (e.g. `sqllens-language-server` for SQL, `jdtls` for Java) must edit source or wait for a release.
+
+**Solution:** Add a `lsp.servers` section to `.okfconfig`:
+
+```json
+{
+  "lsp": {
+    "servers": {
+      ".sql": ["sqllens-language-server", "--stdio"],
+      ".java": ["jdtls"]
+    }
+  }
+}
+```
+
+User-supplied entries override `_lsp_map.py`. No code changes needed for new servers.
+
+**Design:**
+- `okf/enrich/_lsp_map.py` loads config, merges with built-in map, user entries take precedence
+- `okf lsp map` shows merged result (built-in + config)
+- `okf lsp status` uses merged map
+
+**What it unlocks:** Community can add any LSP server without a PR. Lowers the bar for SQL, Java, Lua, Elixir, etc.
+
+---
+
+## 3. Bundle Validation (`okf validate`)
+
+**Impact:** High  
 **Effort:** Low (1–2 days)
 
-**What:** Wrap deterministic SAST tools (semgrep, bandit, gosec) in the same `Enricher` contract used by LSP and LLM. Each tool becomes a `SastEnricher(Enricher)` with `start/run/stop` lifecycle. Structured CWE/severity output injected into concept frontmatter alongside LSP call graphs and LLM summaries.
+**Problem:** No built-in way to verify bundle integrity. Broken links, orphaned concepts, malformed timestamps, and spec non-conformance go undetected until an AI agent or consumer fails to resolve a reference.
 
-**Why:** LSP resolves *what* calls *what*. SAST resolves *which constructs* are *vulnerable*. Combined they produce a bundle with compiler-accurate call graphs + deterministic security findings + LLM behavioural summaries — three orthogonal passes, one pipeline.
+**Solution:** `okf validate` command that checks:
+
+| Check | Description |
+|-------|-------------|
+| Spec conformance | Every `.md` has parseable frontmatter with non-empty `type`. Reserved files (`index.md`, `log.md`) follow spec structure. |
+| Link resolution | All markdown links resolve to existing concept files in the bundle. |
+| Orphan detection | Concepts with zero inbound links from other concepts (configurable threshold). |
+| Timestamp format | All `timestamp` values are valid ISO 8601. |
+| Cross-reference integrity | `calls` / `called_by` / `related` edges point to existing concept IDs. |
+| Duplicate concept IDs | No two concepts share the same `concept_id`. |
+
+```
+okf validate                         # validate ./okf_bundle (default)
+okf validate --bundle ./path         # explicit path
+okf validate --strict                # warnings → exit code 1
+okf validate --no-orphans            # skip orphan check
+okf validate --fix                   # auto-fix trivial issues (trailing whitespace, missing newline)
+```
+
+**Design:** Iterates bundle `.md` files, parses frontmatter, resolves links against file tree, checks edge targets against concept index. Each check is an independent pass — failures in one don't block others. Exit codes: 0 (pass), 1 (errors), 2 (warnings with `--strict`).
+
+**What it unlocks:** CI integration for bundle quality gates. Teams can enforce spec compliance and link hygiene before merging bundle changes. Makes the bundle self-auditing.
+
+---
+
+## 4. Semantic + Graph Search
+
+**Impact:** High  
+**Effort:** Medium (3–5 days)
+
+**Problem:** Current lookup is keyword/token-based. "find payment validation" returns concepts containing "payment" or "validation" but can't answer "what validates payments?" — that requires graph traversal.
+
+**Solution:** Three-tier search:
+
+1. **Keyword** (existing) — exact title/description match
+2. **Graph** — traverse edges: caller → callee → related → semantic related
+3. **Vector** (optional) — embed concept descriptions, nearest-neighbor search
+
+```
+okf lookup "what validates payments?"
+-> concept: validate_payment()
+   path: calls -> PaymentValidator
+   path: related -> PaymentDTO
+   path: called_by -> PaymentController.charge
+```
+
+**Design:** Graph queries on the existing `calls`, `called_by`, `related`, `related_semantic` edges. Vector search via a small local embedding model (or skip if no model available). Results show the graph path, not just the node.
+
+**What it unlocks:** AI agents can navigate the bundle like a knowledge graph, not just a document store. "Find the impact of changing X" becomes a graph query.
+
+---
+
+## 5. Infrastructure / Domain Manifest Scanners
+
+**Impact:** Medium–High  
+**Effort:** Low–Medium (1–3 days per scanner)
+
+**Problem:** Most scanner requests aren't for new languages — they're for config/infrastructure formats that carry operational knowledge. Crossplane (already done), Kubernetes manifests, Terraform, OpenAPI, Docker Compose are more valuable to users than adding Scala v2 syntax support.
+
+**Priority order:**
+
+| Scanner | Effort | Why now |
+|---------|--------|---------|
+| **OpenAPI / Swagger** | 1 day | YAML parser already exists. Extract endpoints, request/response schemas, auth flows as concepts. Links to code via route handler names. |
+| **Kubernetes manifests** | 1 day | YAML parser exists. Extract Deployments, Services, ConfigMaps, CRDs. Links to container images. |
+| **Terraform / OpenTofu** | 2 days | HCL parser needed (tree-sitter-hcl exists). Extract resources, data sources, variables, outputs. Links to cloud provider docs. |
+| **Docker Compose** | 0.5 day | YAML parser exists. Extract services, networks, volumes, env vars. |
+| **CI/CD workflows** | 1 day | YAML parser exists. Extract jobs, steps, triggers from GitHub Actions / GitLab CI. Links to scripts. |
+
+Design mirrors the Crossplane domain pattern: YAML-based manifests → domain classifier → concept extraction. Each gets a rule file in `okf/domains/rules/`.
+
+**What it unlocks:** OKF becomes useful for platform teams, not just application developers. A bundle can describe the full deployment graph, not just the source code.
+
+---
+
+## 6. Bundle Versioning + Diff
+
+**Impact:** Medium  
+**Effort:** Low (1–2 days)
+
+**Problem:** Running `okf generate` overwrites the bundle. No history, no rollback, no incremental comparison.
+
+**Solution:** Store versions in `okf_bundle/versions/.manifest.json`:
+
+```
+okf_bundle/
+├── current/              # symlink to latest version
+├── versions/
+│   ├── v2026-07-14-1/
+│   ├── v2026-07-14-2/
+│   └── .manifest.json    # version log
+└── SUMMARY.md
+```
+
+```bash
+okf generate --keep          # keep previous version
+okf diff ./bundle            # diff current vs previous
+okf diff ./bundle v1 v2      # diff two stored versions
+okf rollback ./bundle        # restore previous
+```
+
+Design builds on existing `okf diff` command — just add directory-level versioning.
+
+**What it unlocks:** CI pipelines can detect knowledge drift. "This PR added 3 new endpoints and deprecated 2 others" without reading any code.
+
+---
+
+## ~~7. MkDocs Replacement / Static Site Generator~~ ⏳ Deferred
+
+**Impact:** Low  
+**Effort:** Medium (3–5 days)
+
+Current docs-site is functional. The nested `docs-site/docs-site/` path issue was fixed in v0.1.48. Remaining issue: build times with 1000+ bundle `.md` files. Deferred until it becomes a bottleneck.
+
+Options if revisited:
+- **MkDocs config fix** — adjust `site_url`, exclude `okf_bundle/` from nav
+- **mdBook** — single Rust binary, no Python deps
+- **Plain HTML** — custom build script, full control
+
+---
+
+## 8. SAST Enrichment (`okf enrich --sast`)
+
+**Impact:** Medium  
+**Effort:** Low (1–2 days)
+
+Wrap deterministic SAST tools (semgrep, bandit, gosec) in the same `Enricher` contract used by LSP and LLM. Each tool becomes a `SastEnricher(Enricher)` with `start/run/stop` lifecycle. Structured CWE/severity output injected into concept frontmatter alongside LSP call graphs and LLM summaries.
+
+**Why:** LSP resolves *what* calls *what*. SAST resolves *which constructs* are *vulnerable*. Combined: compiler-accurate call graphs + deterministic security findings + LLM behavioural summaries — three orthogonal passes, one pipeline.
 
 **Design:** `okf/enrich/_sast_map.py` (ext → tool config), `okf/enrich/sast.py` (subprocess runner, semgrep JSON → concept mapping, CWE→severity table). `okf enrich --sast` flag.
 
 ---
 
-## 6. MkDocs Replacement / Static Site Generator
+## 9. IDE Plugins
 
-**Effort:** Medium (3–5 days)
-
-**What:** Replace MkDocs with a faster, simpler static site generator. The current docs-site build has two issues: (a) deep nested `docs-site/docs-site/` path duplication from `site_url` config, (b) build times scale poorly with 1000+ bundle `.md` files.
-
-**Options:**
-- **MkDocs config fix** — adjust `site_url`, exclude `okf_bundle/` from nav, add `not_in_nav` plugin. Lowest effort.
-- **Move to mdBook** (Rust) — single binary, no Python deps, native search, gitbook-style sidebar. Used by Rust ecosystem.
-- **Starlight (Astro)** — component-based, MDX support, better for interactive docs. Heavier build but prettier output.
-- **Plain HTML template** — like `docs/index.html` — custom build script generates nav from filesystem. Full control, zero framework churn.
-
-**Priority:** Low — current docs-site is functional. This is a DX improvement for maintainers, not users.
-
----
-
-## 7. IDE Plugins
-
+**Impact:** Medium  
 **Effort:** Very High (2–4 weeks each)
 
 **VS Code extension:** Reads `.okf_bundle/` from workspace root. Shows hover tooltips with docstrings/signatures, call-graph peek, jump-to-def across languages. Uses bundle's cross-reference data (no language server needed).
@@ -94,3 +243,24 @@ Ordered by development effort (easiest first).
 **JetBrains plugin:** Same concept via IntelliJ plugin SDK.
 
 **What it unlocks:** OKF becomes invisible — developers get codebase-wide context without leaving their editor. Makes the bundle useful for humans, not just AI agents.
+
+---
+
+## 10. Native SDKs (Python, Node, Go)
+
+**Impact:** Low–Medium  
+**Effort:** Medium (3–5 days per SDK)
+
+**Problem:** Consuming OKF bundles currently requires shelling out to the `okf` CLI or using the MCP server. Programmatic consumption needs a library.
+
+**SDK surface:**
+```python
+# Python (already largely exists via okf.pairs/Python API)
+from okf import load_bundle, search
+concepts = load_bundle("./okf_bundle")
+results = search(concepts, "payment")
+```
+
+**Node / Go SDKs:** Thin wrappers over the bundle `.md` file format. Parse frontmatter, expose search, filter by type/tag. No duplicate parsing logic — just a reader library.
+
+**What it unlocks:** Integration into custom tooling (code review bots, dashboards, CI checks) without shelling out.
