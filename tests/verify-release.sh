@@ -44,7 +44,7 @@ fi
 # 3-6. Web endpoints
 check_url "Landing page"  "https://umairbaig8.github.io/okf-generator/"
 check_url "Viz demo"      "https://umairbaig8.github.io/okf-generator/viz.html"
-check_url "Docs-site"     "https://umairbaig8.github.io/okf-generator/docs-site/"
+check_url "Docs-site"     "https://umairbaig8.github.io/okf-generator/getting-started/"
 check_url "Render app"    "https://okf-generator.onrender.com"
 
 # 7. Local CLI

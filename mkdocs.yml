@@ -1,6 +1,6 @@
 site_name: OKF Generator
 site_description: High-velocity codebase parser — structured, agent-ready knowledge across 17 languages
-site_url: https://umairbaig8.github.io/okf-generator/docs-site/
+site_url: https://umairbaig8.github.io/okf-generator/
 site_dir: build/docs-site
 repo_url: https://github.com/UmairBaig8/okf-generator
 

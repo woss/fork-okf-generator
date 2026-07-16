@@ -120,7 +120,7 @@ docker-compose-yml  = "okf.manifest_scanner:parse_docker_compose"
 
 [project.urls]
 Homepage      = "https://umairbaig8.github.io/okf-generator/"
-Documentation = "https://umairbaig8.github.io/okf-generator/docs-site/"
+Documentation = "https://umairbaig8.github.io/okf-generator/getting-started/"
 Repository    = "https://github.com/UmairBaig8/okf-generator"
 Issues        = "https://github.com/UmairBaig8/okf-generator/issues"
 Changelog     = "https://github.com/UmairBaig8/okf-generator/releases"

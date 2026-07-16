@@ -83,7 +83,7 @@ vim okf/__init__.py         # __version__ = "x.y.z"
   ```bash
   mkdocs build && open build/docs-site/index.html
   ```
-  The docs-site is served at `https://umairbaig8.github.io/okf-generator/docs-site/`.
+  The docs are served at `https://umairbaig8.github.io/okf-generator/getting-started/`.
   `docs/changelog.md` and `docs/development/contributing.md` are **symlinks** to the root files — no manual sync needed.
 
 ### 4. Update fixtures (if new languages/features)
@@ -161,7 +161,7 @@ The script checks:
 | **GitHub Release** | Release exists with matching tag |
 | **Landing page** | `github.io/okf-generator/` returns 200 |
 | **Viz demo** | `viz.html` returns 200 |
-| **Docs-site** | `docs-site/` returns 200 |
+| **Docs-site** | `getting-started/` returns 200 (or any docs page) |
 | **Render app** | `okf-generator.onrender.com` returns 200 |
 | **Local CLI** | `pip install okf-generator==x.y.z && okf --version` matches |
 | **Docker image** | `docker pull ghcr.io/umairbaig8/okf-generator/okf-generator:latest` (if Docker available) |
@@ -174,7 +174,7 @@ PyPI           ✅ 0.1.42
 GitHub Release ✅ v0.1.42
 Landing page   ✅ 200
 Viz demo       ✅ 200
-Docs-site      ✅ 200
+Docs-site      ✅ 200 (getting-started)
 Render app     ✅ 200
 Local CLI      ✅ 0.1.42
 Docker image   ✅ okf-generator:latest
