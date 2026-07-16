@@ -11,10 +11,10 @@ tags:
 - domain:easy
 - git:branch:main
 - git:repo:okf-generator
+- ecosystem:npm
 - version:^4.17.21
 - manifest:package.json
-- ecosystem:npm
-timestamp: '2026-07-15T21:16:12Z'
+timestamp: '2026-07-16T08:20:16Z'
 title: lodash
 type: Dependency
 ---
