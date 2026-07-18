@@ -395,6 +395,10 @@ html[data-theme="light"] #cosmos-toolbar { background:rgba(255,255,255,.75); bor
 .filter-chip .dot { width:5px; height:5px; border-radius:50%; }
 .filter-chip:hover { border-color:var(--border-strong); color:var(--text); }
 .filter-chip.active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong); }
+.filter-chip.bundle { font-size:10px; padding:3px 8px; background:var(--surface-3); border-color:var(--border-strong); color:var(--text-3); }
+.filter-chip.bundle.active { background:var(--surface-2); border-color:var(--text-2); color:var(--text); }
+.filter-chip.bundle .count { font-size:9px; color:var(--text-3); font-weight:400; margin-left:2px; }
+.filter-chip .count { font-size:9px; color:var(--text-3); margin-left:3px; }
 .toolbar-sep { width:1px; align-self:stretch; background:var(--border); margin:2px 0; flex:0 0 auto; }
 #status-pill {
   position:absolute; top:16px; left:16px; z-index:20; font-size:11px; color:var(--text-3);
@@ -1551,6 +1555,8 @@ function renderEgoGraph(centerId, concept) {
 
 // ---- Cosmos Explore Tab (pure Canvas 2D) ----
 var _canvasVars = null;
+var _cosmosFilterDirty = 0;
+function _cosmosFilterChanged() { _cosmosFilterDirty++; }
 var _cosmosLoaded = false;
 var _cosmosLoading = false;
 var _cosmosClickedIdx = null;
@@ -1559,6 +1565,7 @@ var _cosmosPtrX = 0, _cosmosPtrY = 0;
 var _cosmosActiveTypes = null;
 var _cosmosActiveBundles = null;
 var _cosmosMatchSet = null;
+var _cosmosFilterDirty = 0;
 var _cosmosNodes = [];
 var _cosmosEdges = [];
 var _cosmosDomainNames = [];
@@ -2089,6 +2096,11 @@ async function loadCosmosExplore() {
   _cosmosActiveTypes = new Set(Object.keys(TYPE_COLORS));
   var chipRow = qs('chip-row');
   chipRow.innerHTML = '';
+  // Type label
+  var typeLabel = document.createElement('span');
+  typeLabel.textContent = 'Type';
+  typeLabel.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-right:2px;flex:0 0 auto;padding:2px 0';
+  chipRow.appendChild(typeLabel);
   Object.keys(TYPE_COLORS).forEach(function(t) {
     var chip = document.createElement('div');
     chip.className = 'filter-chip active';
@@ -2096,6 +2108,7 @@ async function loadCosmosExplore() {
     chip.onclick = function() {
       if (_cosmosActiveTypes.has(t)) { _cosmosActiveTypes.delete(t); chip.classList.remove('active'); }
       else { _cosmosActiveTypes.add(t); chip.classList.add('active'); }
+      _cosmosFilterChanged();
     };
     chipRow.appendChild(chip);
   });
@@ -2108,13 +2121,18 @@ async function loadCosmosExplore() {
   if (bundleKeys.length > 1) {
     var bundleRow = qs('bundle-row');
     bundleRow.style.display = 'flex';
+    var bundleLabel = document.createElement('span');
+    bundleLabel.textContent = 'Bundle';
+    bundleLabel.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-right:4px;flex:0 0 auto;padding:2px 0';
+    bundleRow.appendChild(bundleLabel);
     bundleKeys.forEach(function(b) {
       var chip = document.createElement('div');
-      chip.className = 'filter-chip active';
-      chip.innerHTML = b + '<span style="font-size:9px;color:var(--text-3);margin-left:3px">' + bundleNames[b] + '</span>';
+      chip.className = 'filter-chip bundle active';
+      chip.innerHTML = b + '<span class="count">' + bundleNames[b] + '</span>';
       chip.onclick = function() {
         if (_cosmosActiveBundles.has(b)) { _cosmosActiveBundles.delete(b); chip.classList.remove('active'); }
         else { _cosmosActiveBundles.add(b); chip.classList.add('active'); }
+        _cosmosFilterChanged();
       };
       bundleRow.appendChild(chip);
     });
@@ -2154,6 +2172,7 @@ var _cosmosSearchTimer;
     var q = e.target.value.trim().toLowerCase();
     _cosmosSearchTimer = setTimeout(function() {
       _cosmosMatchSet = q ? new Set(_cosmosNodes.map(function(n,i){ return [n,i]; }).filter(function(p){ return (p[0].title||'').toLowerCase().includes(q); }).map(function(p){ return p[1]; })) : null;
+      _cosmosFilterChanged();
     }, 120);
   });
 })();
