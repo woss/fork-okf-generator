@@ -378,27 +378,43 @@ html[data-theme="light"] #graph-sidebar { background:rgba(255,255,255,.1); borde
 html[data-theme="light"] #cosmos-toolbar { background:rgba(255,255,255,.75); border-color:rgba(0,0,0,.08); }
 #cosmos-toolbar .search-box { position:relative; flex:0 0 auto; }
 #cosmos-toolbar .search-box svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-3); pointer-events:none; }
-#cosmos-search {
-  width:180px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
-  padding:6px 8px 6px 28px; color:var(--text); font-size:12px; outline:none;
-  transition:border-color .15s var(--ease);
-}
+#cosmos-search { width:160px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:6px 8px 6px 28px; color:var(--text); font-size:12px; outline:none; transition:border-color .15s var(--ease); }
 #cosmos-search:focus { border-color:var(--accent); }
 #cosmos-search::placeholder { color:var(--text-3); }
-#chip-row { display:flex; gap:4px; flex:1; flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-#chip-row::-webkit-scrollbar { display:none; }
-.filter-chip {
-  font-size:10px; font-weight:600; padding:4px 10px; border-radius:99px; cursor:pointer; user-select:none;
-  background:var(--surface-2); border:1px solid var(--border); color:var(--text-2);
-  transition:all .12s var(--ease); display:flex; align-items:center; gap:4px; white-space:nowrap; flex:0 0 auto;
+
+.dropdown-btn {
+  background:transparent; border:1px solid transparent; color:var(--text-2); border-radius:6px;
+  padding:5px 10px; font-size:12px; font-weight:500; cursor:pointer; font-family:inherit;
+  display:flex; align-items:center; gap:6px; white-space:nowrap; transition:all .15s var(--ease);
 }
-.filter-chip .dot { width:5px; height:5px; border-radius:50%; }
-.filter-chip:hover { border-color:var(--border-strong); color:var(--text); }
-.filter-chip.active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong); }
-.filter-chip.bundle { font-size:10px; padding:3px 8px; background:var(--surface-3); border-color:var(--border-strong); color:var(--text-3); }
-.filter-chip.bundle.active { background:var(--surface-2); border-color:var(--text-2); color:var(--text); }
-.filter-chip.bundle .count { font-size:9px; color:var(--text-3); font-weight:400; margin-left:2px; }
-.filter-chip .count { font-size:9px; color:var(--text-3); margin-left:3px; }
+.dropdown-btn:hover { background:var(--surface-2); }
+.dropdown-btn.active { background:var(--accent-soft); color:var(--accent-strong); border-color:var(--accent); }
+.dropdown-btn .badge { background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:99px; }
+.dropdown-wrapper { position:relative; }
+.dropdown-menu {
+  position:absolute; top:calc(100% + 6px); left:0; z-index:100; min-width:180px; max-height:300px;
+  background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg); overflow:hidden; display:none; flex-direction:column;
+}
+.dropdown-menu.open { display:flex; }
+.dropdown-list { max-height:260px; overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:2px; }
+.dropdown-list::-webkit-scrollbar { width:5px; }
+.dropdown-list::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:99px; }
+.dropdown-item {
+  display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius:6px;
+  color:var(--text); font-size:12px; cursor:pointer; transition:background .1s; user-select:none;
+}
+.dropdown-item:hover { background:var(--surface-2); }
+.item-left { display:flex; align-items:center; gap:8px; }
+.item-cb {
+  width:14px; height:14px; border-radius:4px; border:2px solid var(--border-strong); flex:none;
+  display:flex; align-items:center; justify-content:center; transition:all .12s var(--ease);
+}
+.dropdown-item.on .item-cb { background:var(--accent); border-color:var(--accent); }
+.dropdown-item.on .item-cb::after { content:'✓'; color:#fff; font-size:9px; font-weight:700; }
+.item-count { font-size:10px; color:var(--text-3); background:var(--surface-2); padding:1px 6px; border-radius:99px; font-weight:600; }
+.dropdown-item .dot { width:7px; height:7px; border-radius:50%; flex:none; }
+
 .toolbar-sep { width:1px; align-self:stretch; background:var(--border); margin:2px 0; flex:0 0 auto; }
 #status-pill {
   position:absolute; top:16px; left:16px; z-index:20; font-size:11px; color:var(--text-3);
@@ -428,7 +444,7 @@ html[data-theme="light"] #cosmos-legend { background:rgba(255,255,255,.75); bord
 #cosmos-legend.collapsed #cosmos-legend-body { display:none; }
 #cosmos-legend.collapsed #cosmos-legend-head svg { transform:rotate(-90deg); }
 #cosmos-legend-body { padding:0 12px 12px; display:flex; flex-direction:column; gap:4px; }
-.legend-item { display:flex; align-items:center; gap:8px; padding:4px 6px; border-radius:6px; cursor:default; font-size:11px; font-weight:500; color:var(--text-2); transition:background .12s var(--ease); }
+.legend-item { display:flex; align-items:center; gap:8px; padding:3px 6px; border-radius:6px; font-size:11px; font-weight:500; color:var(--text-2); }
 .legend-item .dot { width:8px; height:8px; border-radius:50%; flex:none; }
 .legend-item .count { color:var(--text-3); margin-left:auto; font-size:10px; font-weight:600; }
 #zoomctl {
@@ -680,9 +696,15 @@ html[data-theme="light"] .detail-tab:hover { background:rgba(0,0,0,.04); }
              <input id="cosmos-search" type="text" placeholder="Search concepts…" style="width:140px">
            </div>
            <div class="toolbar-sep"></div>
-           <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
-             <div id="chip-row"></div>
-             <div id="bundle-row" style="display:none;gap:4px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none"></div>
+           <div class="filter-group" style="display:flex;gap:4px">
+             <div class="dropdown-wrapper">
+               <button class="dropdown-btn" id="type-btn" onclick="toggleDropdown('type')">Type <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>
+               <div class="dropdown-menu" id="type-menu"><div class="dropdown-list" id="type-list"></div></div>
+             </div>
+             <div class="dropdown-wrapper">
+               <button class="dropdown-btn" id="bundle-btn" onclick="toggleDropdown('bundle')">Bundle <span class="badge" id="bundle-badge">All</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>
+               <div class="dropdown-menu" id="bundle-menu"><div class="dropdown-list" id="bundle-list"></div></div>
+             </div>
            </div>
          </div>
 
@@ -2094,49 +2116,45 @@ async function loadCosmosExplore() {
   });
 
   _cosmosActiveTypes = new Set(Object.keys(TYPE_COLORS));
-  var chipRow = qs('chip-row');
-  chipRow.innerHTML = '';
-  // Type label
-  var typeLabel = document.createElement('span');
-  typeLabel.textContent = 'Type';
-  typeLabel.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-right:2px;flex:0 0 auto;padding:2px 0';
-  chipRow.appendChild(typeLabel);
+  
+  // Type dropdown
+  var typeList = qs('type-list');
+  typeList.innerHTML = '';
   Object.keys(TYPE_COLORS).forEach(function(t) {
-    var chip = document.createElement('div');
-    chip.className = 'filter-chip active';
-    chip.innerHTML = '<span class="dot" style="background:' + TYPE_COLORS[t] + '"></span>' + t;
-    chip.onclick = function() {
-      if (_cosmosActiveTypes.has(t)) { _cosmosActiveTypes.delete(t); chip.classList.remove('active'); }
-      else { _cosmosActiveTypes.add(t); chip.classList.add('active'); }
+    var cnt = typeCounts[t] || 0;
+    var item = document.createElement('div');
+    item.className = 'dropdown-item on';
+    item.innerHTML = '<div class="item-left"><span class="dot" style="background:' + TYPE_COLORS[t] + '"></span><span class="item-cb"></span><span>' + t + '</span></div><span class="item-count">' + cnt + '</span>';
+    item.onclick = function() {
+      if (_cosmosActiveTypes.has(t)) { _cosmosActiveTypes.delete(t); item.classList.remove('on'); }
+      else { _cosmosActiveTypes.add(t); item.classList.add('on'); }
       _cosmosFilterChanged();
     };
-    chipRow.appendChild(chip);
+    typeList.appendChild(item);
   });
 
-  // Bundle chips
+  // Bundle dropdown
   var bundleNames = {};
   _cosmosNodes.forEach(function(n) { var b = (n.id || n.concept_id || '').split('/')[0] || 'root'; bundleNames[b] = (bundleNames[b] || 0) + 1; });
   var bundleKeys = Object.keys(bundleNames).sort();
   _cosmosActiveBundles = new Set(bundleKeys);
-  if (bundleKeys.length > 1) {
-    var bundleRow = qs('bundle-row');
-    bundleRow.style.display = 'flex';
-    var bundleLabel = document.createElement('span');
-    bundleLabel.textContent = 'Bundle';
-    bundleLabel.style.cssText = 'font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-right:4px;flex:0 0 auto;padding:2px 0';
-    bundleRow.appendChild(bundleLabel);
-    bundleKeys.forEach(function(b) {
-      var chip = document.createElement('div');
-      chip.className = 'filter-chip bundle active';
-      chip.innerHTML = b + '<span class="count">' + bundleNames[b] + '</span>';
-      chip.onclick = function() {
-        if (_cosmosActiveBundles.has(b)) { _cosmosActiveBundles.delete(b); chip.classList.remove('active'); }
-        else { _cosmosActiveBundles.add(b); chip.classList.add('active'); }
-        _cosmosFilterChanged();
-      };
-      bundleRow.appendChild(chip);
-    });
-  }
+  var bundleList = qs('bundle-list');
+  bundleList.innerHTML = '';
+  bundleKeys.forEach(function(b) {
+    var item = document.createElement('div');
+    item.className = 'dropdown-item on';
+    item.innerHTML = '<div class="item-left"><span class="item-cb"></span><span>' + esc(b) + '</span></div><span class="item-count">' + bundleNames[b] + '</span>';
+    item.onclick = function() {
+      if (_cosmosActiveBundles.has(b)) { _cosmosActiveBundles.delete(b); item.classList.remove('on'); }
+      else { _cosmosActiveBundles.add(b); item.classList.add('on'); }
+      _cosmosFilterChanged();
+      updateBundleBadge();
+    };
+    bundleList.appendChild(item);
+  });
+  updateBundleBadge();
+
+  var labelRoot = qs('cluster-labels');
 
   var labelRoot = qs('cluster-labels');
   labelRoot.innerHTML = '';
@@ -2192,6 +2210,28 @@ function _cosmosPosHoverTag() { _cosmosHoverEl.style.left = _cosmosPtrX + 'px'; 
 function cosmosZoom(f) {}
 function cosmosTogglePhysics() {}
 function cosmosReset() {}
+
+// ---- Dropdown Toggle ----
+var _openDropdown = null;
+function toggleDropdown(name) {
+  var menu = qs(name + '-menu');
+  if (!menu) return;
+  if (_openDropdown && _openDropdown !== menu) _openDropdown.classList.remove('open');
+  menu.classList.toggle('open');
+  _openDropdown = menu.classList.contains('open') ? menu : null;
+}
+function updateBundleBadge() {
+  var active = _cosmosActiveBundles ? _cosmosActiveBundles.size : 0;
+  var total = _cosmosActiveBundles ? _cosmosNodes.reduce(function(s,n) { var b=(n.id||n.concept_id||'').split('/')[0]||'root'; s.add(b); return s; }, new Set()).size : 0;
+  var badge = qs('bundle-badge');
+  if (badge) badge.textContent = active < total ? '' + active : 'All';
+}
+document.addEventListener('click', function(e) {
+  if (_openDropdown && !e.target.closest('.dropdown-wrapper')) {
+    _openDropdown.classList.remove('open');
+    _openDropdown = null;
+  }
+});
 window.cosmosZoom = cosmosZoom;
 window.cosmosReset = cosmosReset;
 
