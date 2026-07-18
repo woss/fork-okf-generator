@@ -172,6 +172,11 @@ def build_app(bundle_dir: Path):
                 if ub and len(top_ids) < max_nodes:
                     top_ids.add(c["concept_id"])
                     top_ids.update(ub[:5])
+        # If no relationships found, fall back to showing all non-Dependency concepts
+        if not top_ids:
+            for c in concepts:
+                if c["type"] != "Dependency" and len(top_ids) < max_nodes:
+                    top_ids.add(c["concept_id"])
         nodes, edges = [], []
         for c in concepts:
             if c["concept_id"] not in top_ids:
