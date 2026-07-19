@@ -18,6 +18,8 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
+from okf._walk import walk_files
+
 log = logging.getLogger("okf_manifest")
 
 MANIFEST_VERSION = 2
@@ -183,19 +185,15 @@ def _should_skip(rel_path: Path, exclude: set[str], ignore_pats: list | None = N
 
 
 def walk_source_files(source_root: Path, exclude: set[str] | None = None) -> dict[Path, str]:
-    exclude = exclude or set()
+    exclude_set: set[str] = set(exclude) if exclude else set()
     from okf.ignore import load_patterns
     ignore_pats = load_patterns(source_root)
     result: dict[Path, str] = {}
     from okf.parsers import get_parser
     import okf.manifest_scanner as manifest_scanner
 
-    for path in sorted(source_root.rglob("*")):
-        if not path.is_file():
-            continue
+    for path in walk_files(source_root, ignore_pats=ignore_pats, exclude=exclude_set):
         rel = path.relative_to(source_root)
-        if _should_skip(rel, exclude, ignore_pats):
-            continue
         if manifest_scanner.is_manifest_file(path):
             result[rel] = compute_file_hash(path)
             continue

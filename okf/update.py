@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from okf.parsers.base import Concept
+from okf._walk import walk_dirs
 
 log = logging.getLogger("okf_update")
 
@@ -272,28 +273,9 @@ def _parse_file(path: Path, source_root: Path, parser, exclude: set[str] | None 
 
 
 def _walk_source_dirs(source_root: Path, exclude: set[str] | None = None) -> set[str]:
-    exclude = exclude or set()
-    from okf.ignore import load_patterns, matches
+    from okf.ignore import load_patterns
     ignore_pats = load_patterns(source_root)
-    dirs: set[str] = set()
-    for path in sorted(source_root.rglob("*")):
-        if not path.is_dir():
-            continue
-        rel = path.relative_to(source_root)
-        parts = rel.parts
-        if any(part in exclude for part in parts):
-            continue
-        if matches(rel, ignore_pats):
-            continue
-        if any(part.startswith(".") for part in parts):
-            continue
-        from okf.parsers.base import SKIP_DIRS, SKIP_DIR_SUFFIXES
-        if any(part in SKIP_DIRS for part in parts):
-            continue
-        if any(part.endswith(sfx) for sfx in SKIP_DIR_SUFFIXES for part in parts):
-            continue
-        dirs.add(str(rel).replace(os.sep, "/"))
-    return dirs
+    return walk_dirs(source_root, ignore_pats=ignore_pats, exclude=exclude)
 
 
 # ---------------------------------------------------------------------------

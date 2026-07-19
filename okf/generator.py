@@ -58,6 +58,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -67,12 +68,56 @@ import yaml  # PyYAML
 from tqdm import tqdm
 
 from okf import manifest_scanner
+from okf._walk import walk_files, walk_dirs, MAX_WORKERS, MAX_PARALLEL_WORKERS
 from okf.enrich._llm_prompts import DEEP_ENRICH_PROMPT, ENRICH_PROMPT, RELATED_PROMPT, SECURITY_PROMPT
 from okf.ignore import load_patterns, matches as ignore_matches
 from okf.parsers import get_parser
-from okf.parsers.base import Concept, SKIP_DIRS, SKIP_DIR_SUFFIXES
+from okf.parsers.base import Concept
 
 log = logging.getLogger("okf_gen")
+
+# Module-level helpers for ProcessPoolExecutor (must be importable/picklable)
+
+def _mp_parse_file(args: tuple) -> list:
+    """Standalone parse worker for multiprocessing.
+
+    Receives (path_str, root_str, git_info_dict) — primitives only so
+    the serialization overhead is minimal.  Returns a list of Concept
+    dataclass instances (picklable by default).
+
+    Each worker imports its own parser and language module — tree-sitter
+    language objects are NOT shared across processes (no lock needed).
+    """
+    path_str, root_str, git = args
+    from pathlib import Path
+    path = Path(path_str)
+    root = Path(root_str)
+    try:
+        from okf.parsers import get_parser
+        from okf.parsers.base import Concept
+        rel = str(path.relative_to(root))
+        parser = get_parser(path.suffix.lower())
+        if parser is None:
+            return []
+        file_concepts = parser.parse_file(path, root)
+        for c in file_concepts:
+            # Build tags locally — git info is read-only dict
+            tags = [f"lang:{parser.LANGUAGE}", f"type:{c.type}"]
+            parts = c.resource.replace("\\", "/").replace(os.sep, "/").split("/")
+            if parts:
+                tags.append(f"module:{parts[0]}")
+            if len(parts) > 1:
+                tags.append(f"domain:{parts[1]}")
+            if git.get("branch"):
+                tags.append(f"git:branch:{git['branch']}")
+            if git.get("repo"):
+                tags.append(f"git:repo:{git['repo']}")
+            c.tags = tags
+        return file_concepts
+    except Exception as e:
+        logger = logging.getLogger("okf_gen")
+        logger.warning(f"MP parse failed for {path_str}: {e}")
+        return []
 
 # Token usage accumulator for enrich commands (thread-safe via GIL)
 _ENRICH_TOKENS: list[dict] = []
@@ -1032,23 +1077,7 @@ def _walk_source_dirs(root: Path, ignore_pats: list | None = None) -> set[str]:
     if ignore_pats is None:
         from okf.ignore import load_patterns as _lp
         ignore_pats = _lp(root)
-    dirs = {""}
-    for path in root.rglob("*"):
-        if not path.is_dir():
-            continue
-        rel_parts = path.relative_to(root).parts
-        if any(
-            part.startswith(".") or
-            part in SKIP_DIRS or
-            any(part.endswith(sfx) for sfx in SKIP_DIR_SUFFIXES)
-            for part in rel_parts
-        ):
-            continue
-        rel = path.relative_to(root)
-        if ignore_matches(rel, ignore_pats):
-            continue
-        dirs.add("/".join(rel_parts))
-    return dirs
+    return walk_dirs(root, ignore_pats=ignore_pats)
 
 
 def scan_codebase(root: Path, exclude: list[str] | None = None,
@@ -1066,76 +1095,88 @@ def scan_codebase(root: Path, exclude: list[str] | None = None,
     if ignore_pats:
         log.info(f"Loaded {len(ignore_pats)} ignore patterns")
 
+    # ── Stage timing ──────────────────────────────────────────────
+    _t_walk_start = time.perf_counter()
+    all_paths = list(walk_files(root, ignore_pats=ignore_pats, exclude=set(exclude)))
+    _t_walk_end   = time.perf_counter()
+    _walk_secs    = _t_walk_end - _t_walk_start
+    log.info(f"[perf] walk_filtered: {len(all_paths)} files in {_walk_secs:.2f}s")
+
     concepts = []
-    all_paths = sorted(root.rglob("*"))
-    log.info(f"Scanning {len(all_paths)} paths...")
+    _t_parse_start = time.perf_counter()
+    n_parsed   = 0
+    n_manifest = 0
+    n_skipped  = 0
 
-    pbar = tqdm(all_paths, desc="Scanning", unit="files", leave=False, disable=len(all_paths) < 500)
-    for path in pbar:
+    # Separate manifest files (fast, sequential) from source files (CPU-bound, parallel)
+    manifest_paths = []
+    source_paths   = []
+    for path in all_paths:
         rel = path.relative_to(root)
-        # per-run exclude patterns (e.g. --exclude tests, --exclude docs)
         if any(part in exclude for part in rel.parts):
+            n_skipped += 1
             continue
-        # ignore file patterns (.gitignore, .okfignore, .okf-exclude)
         if ignore_matches(rel, ignore_pats):
+            n_skipped += 1
             continue
-        if not path.is_file():
-            continue
-
-        # Check manifest files BEFORE hidden-file skip — manifests like
-        # .env legitimately start with a dot and must not be filtered out.
         if manifest_scanner.is_manifest_file(path):
-            try:
-                raw_deps = manifest_scanner.scan_manifest(path, root)
-                for d in raw_deps:
-                    # Merge standardised tags with ecosystem-specific tags from the scanner
-                    base = _make_tags(language="manifest", resource=d["resource"],
-                                      concept_type=d["type"], git=git)
-                    existing = set(d.get("tags", []))
-                    merged = list(dict.fromkeys(base + [t for t in existing if not t.startswith(("lang:", "type:", "module:", "domain:", "git:"))]))
-                    c = Concept(
-                        type=d["type"], title=d["title"],
-                        description=d["description"], resource=d["resource"],
-                        tags=merged,
-                        timestamp=d["timestamp"], concept_id=d["concept_id"],
-                        body_extra=d.get("body_extra", {}),
-                    )
-                    concepts.append(c)
-                log.debug(f"Parsed manifest {path}: {len(raw_deps)} deps")
-            except Exception as e:
-                log.warning(f"Failed to parse manifest {path}: {e}")
-            continue
-        # Skip hidden / vendor dirs for non-manifest files
-        if any(
-            part.startswith(".") or
-            part in SKIP_DIRS or
-            any(part.endswith(sfx) for sfx in SKIP_DIR_SUFFIXES)
-            for part in rel.parts
-        ):
-            continue
-        parser = get_parser(path.suffix.lower())
-        if parser is None:
-            continue
+            manifest_paths.append(path)
+        else:
+            p = get_parser(path.suffix.lower())
+            if p is not None:
+                source_paths.append(path)
+            else:
+                n_skipped += 1
+
+    # ── Manifest parsing (sequential, cheap) ──────────────────────────
+    for path in manifest_paths:
         try:
-            file_concepts = parser.parse_file(path, root)
-            for c in file_concepts:
-                c.tags = _make_tags(
-                    language=parser.LANGUAGE,
-                    resource=c.resource,
-                    concept_type=c.type,
-                    git=git,
+            raw_deps = manifest_scanner.scan_manifest(path, root)
+            for d in raw_deps:
+                base = _make_tags(language="manifest", resource=d["resource"],
+                                  concept_type=d["type"], git=git)
+                existing = set(d.get("tags", []))
+                merged = list(dict.fromkeys(base + [t for t in existing if not t.startswith(("lang:", "type:", "module:", "domain:", "git:"))]))
+                c = Concept(
+                    type=d["type"], title=d["title"],
+                    description=d["description"], resource=d["resource"],
+                    tags=merged,
+                    timestamp=d["timestamp"], concept_id=d["concept_id"],
+                    body_extra=d.get("body_extra", {}),
                 )
-            concepts.extend(file_concepts)
-            log.debug(f"Parsed {path}: {len(file_concepts)} concepts")
+                concepts.append(c)
         except Exception as e:
-            log.warning(f"Failed to parse {path}: {e}")
+            log.warning(f"Failed to parse manifest {path}: {e}")
+        n_manifest += 1
+
+    # ── Source file parsing (CPU-bound, parallel) ─────────────────────
+    log.info(f"[perf]   parsing {len(source_paths)} source files with "
+             f"ProcessPoolExecutor ({MAX_PARALLEL_WORKERS} workers)...")
+    git_arg = git or {}
+    work_items = [(str(p), str(root), git_arg) for p in source_paths]
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=MAX_PARALLEL_WORKERS) as pool:
+        results = list(tqdm(
+            pool.map(_mp_parse_file, work_items, chunksize=32),
+            total=len(work_items), desc="Parsing", unit="files",
+        ))
+    for file_concepts in results:
+        concepts.extend(file_concepts)
+    n_parsed = len(source_paths)
+
+    _t_parse_end = time.perf_counter()
+    _parse_secs = _t_parse_end - _t_parse_start
+    log.info(f"[perf] parse: {n_parsed} parsed + {n_manifest} manifest + {n_skipped} skipped in {_parse_secs:.2f}s")
 
     if not concepts:
         log.warning(f"No recognized source files found under {root} — bundle will be empty.")
         return concepts
 
+    _t_link_start = time.perf_counter()
     from okf.linker import link_all
     stats = link_all(concepts)
+    _t_link_end = time.perf_counter()
+    log.info(f"[perf] link: {_t_link_end - _t_link_start:.2f}s")
     log.info(stats.summary_line())
 
     if domain_rules:
@@ -1172,14 +1213,35 @@ def write_bundle(
     ts = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # ── 1. Write every concept file (skip already-enriched ones) ────────────
+    _t_write_start = time.perf_counter()
     from okf.config import load as load_config, _get
     _cfg = load_config()
     enrich_enabled = _get(_cfg, "llm.enabled", False)
-    for c in concepts:
+    src_dir = Path(source_root) if source_root else None
+
+    # Cache already-created parent dirs to avoid redundant mkdir + stat calls
+    import threading
+    _created_dirs: set[str] = set()
+    _dir_lock = threading.Lock()
+
+    _fmt_total = 0.0
+    _io_total  = 0.0
+    _mkdir_total = 0
+
+    def _write_one(c):
+        nonlocal _fmt_total, _io_total, _mkdir_total
+        t0 = time.perf_counter()
+        content = render_concept(c, all_map, source_dir=src_dir)
+        t1 = time.perf_counter()
+
         out_path = _concept_output_path(c, output_dir)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        # If enrichment is enabled and file already exists with rich content,
-        # skip overwriting — the enrichment pass already wrote the best version
+        parent = str(out_path.parent)
+        if parent not in _created_dirs:
+            with _dir_lock:
+                if parent not in _created_dirs:
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    _created_dirs.add(parent)
+            _mkdir_total += 1
         if enrich_enabled and out_path.exists():
             try:
                 existing = out_path.read_text(encoding="utf-8", errors="replace")
@@ -1187,11 +1249,22 @@ def write_bundle(
                 if len(fm_parts) >= 2:
                     fm = yaml.safe_load(fm_parts[1]) or {}
                     if len(fm.get("description", "")) > 60:
-                        continue  # keep enriched version
+                        _fmt_total += t1 - t0
+                        return
             except Exception:
                 pass
-        src_dir = Path(source_root) if source_root else None
-        out_path.write_text(render_concept(c, all_map, source_dir=src_dir), encoding="utf-8")
+        out_path.write_text(content, encoding="utf-8")
+        t2 = time.perf_counter()
+        _fmt_total += t1 - t0
+        _io_total  += t2 - t1
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+        list(tqdm(pool.map(_write_one, concepts), total=len(concepts), desc="Writing", unit="files"))
+    _t_write_end = time.perf_counter()
+    log.info(f"[perf] write concepts: {len(concepts)} files in {_t_write_end - _t_write_start:.2f}s"
+             f"  (fmt={_fmt_total:.2f}s io={_io_total:.2f}s mkdirs={_mkdir_total})")
+
+    _t_index_start = time.perf_counter()
 
     # ── 2. Build directory tree from all concept paths ────────────────────
     # dir_path (relative to output_dir) → {"subdirs": set, "concepts": list}
@@ -1249,6 +1322,9 @@ def write_bundle(
 
     # ── 5. Log ────────────────────────────────────────────────────────────
     (output_dir / "log.md").write_text(render_log(log_entries), encoding="utf-8")
+
+    _t_index_end = time.perf_counter()
+    log.info(f"[perf] write indexes: {len(dir_tree)} dirs in {_t_index_end - _t_index_start:.2f}s")
 
     # return summary grouped by type (for printing)
     by_type: dict[str, list] = {}
@@ -1623,7 +1699,10 @@ def main():
         log.info(f"Domain rules loaded: {len(domain_rules)} rules from {len(domain_names)} domain(s)")
 
     # --- Scan ---
+    _t0 = time.perf_counter()
     concepts = scan_codebase(source_dir, exclude=exclude, domain_rules=domain_rules)
+    _t1 = time.perf_counter()
+    log.info(f"[perf] total scan_codebase: {_t1 - _t0:.2f}s")
     log.info(f"Found {len(concepts)} concepts")
 
     if not concepts:
@@ -1767,11 +1846,15 @@ def main():
         source_dirs=_walk_source_dirs(source_dir),
         source_root=str(source_dir.resolve()),
     )
+    _t2 = time.perf_counter()
+    log.info(f"[perf] total write_bundle: {_t2 - _t1:.2f}s")
 
     # --- Write SUMMARY.md ---
     git = _git_info(source_dir)
     summary_path = write_summary(bundle_name, concepts, output_dir, git)
     log.info(f"SUMMARY.md written -> {summary_path}")
+    _t3 = time.perf_counter()
+    log.info(f"[perf] total generate: {_t3 - _t0:.2f}s")
 
     # --- Summary ---
     print(f"\n{'='*55}")

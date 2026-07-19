@@ -17,6 +17,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from okf._walk import walk_files
 from okf.cli import print_banner
 
 
@@ -68,9 +69,7 @@ def detect_languages(root: Path) -> dict[str, int]:
     langs: dict[str, int] = {}
     manifests = 0
     total = 0
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
+    for path in walk_files(root):
         ext = path.suffix.lower()
         if ext in exts:
             lang = exts[ext]
