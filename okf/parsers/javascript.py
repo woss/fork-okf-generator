@@ -10,30 +10,43 @@ class JSTSParser(TreeSitterParser):
     EXTENSIONS = {".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"}
     _TS_MODULE = "tree_sitter_javascript"
     _lang_obj  = None
+    _lang_lock = None
+
+    @classmethod
+    def _js_init_lock(cls):
+        if cls._lang_lock is None:
+            import threading
+            cls._lang_lock = threading.Lock()
 
     def _lang(self):
-        if self.__class__._lang_obj is None:
-            ext = getattr(self, "_path_ext", ".js")
-            if ext in {".ts", ".tsx"}:
+        self.__class__._js_init_lock()
+        ext = getattr(self, "_path_ext", ".js")
+        if ext in {".ts", ".tsx"}:
+            # TypeScript uses a separate grammar — never cache the JS grammar
+            # for .ts/.tsx files.  We hold the per-class lock so concurrent
+            # .js and .ts parses don't cross-contaminate.
+            with self.__class__._lang_lock:
                 try:
                     import tree_sitter_typescript as tsts
                     from tree_sitter import Language
-                    # typescript grammar has .language_typescript() and .language_tsx()
                     if ext == ".tsx":
-                        self.__class__._lang_obj = Language(tsts.language_tsx())
+                        obj = Language(tsts.language_tsx())
                     else:
-                        self.__class__._lang_obj = Language(tsts.language_typescript())
-                    return self.__class__._lang_obj
+                        obj = Language(tsts.language_typescript())
+                    return obj
                 except Exception:
                     pass
-            import tree_sitter_javascript as tsjs
-            from tree_sitter import Language
-            self.__class__._lang_obj = Language(tsjs.language())
+        # JS / fallback — use the class-level cache like every other parser
+        if self.__class__._lang_obj is None:
+            with self.__class__._lang_lock:
+                if self.__class__._lang_obj is None:
+                    import tree_sitter_javascript as tsjs
+                    from tree_sitter import Language
+                    self.__class__._lang_obj = Language(tsjs.language())
         return self.__class__._lang_obj
 
     def parse_file(self, path: Path, repo_root: Path) -> list[Concept]:
         self._path_ext = path.suffix.lower()
-        self.__class__._lang_obj = None   # reset lang cache every parse to avoid TS→JS cross-contamination
         if self._path_ext in {".ts", ".tsx"}:
             self.LANGUAGE = "typescript"
         else:

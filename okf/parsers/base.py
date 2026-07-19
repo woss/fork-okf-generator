@@ -173,13 +173,23 @@ class TreeSitterParser:
     EXTENSIONS: set[str] = set()
     _TS_MODULE   = ""
     _lang_obj    = None
+    _lang_lock   = None  # lazily created per-subclass
+
+    @classmethod
+    def _init_lock(cls):
+        if cls._lang_lock is None:
+            import threading
+            cls._lang_lock = threading.Lock()
 
     def _lang(self):
+        self._init_lock()
         if self.__class__._lang_obj is None:
-            import importlib
-            mod = importlib.import_module(self._TS_MODULE)
-            from tree_sitter import Language
-            self.__class__._lang_obj = Language(mod.language())
+            with self.__class__._lang_lock:
+                if self.__class__._lang_obj is None:
+                    import importlib
+                    mod = importlib.import_module(self._TS_MODULE)
+                    from tree_sitter import Language
+                    self.__class__._lang_obj = Language(mod.language())
         return self.__class__._lang_obj
 
     def _parser(self):

@@ -32,8 +32,10 @@ See PATCH NOTES at bottom of file.  Short version:
 from __future__ import annotations
 
 import logging
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 log = logging.getLogger("okf_gen")
 
@@ -178,6 +180,8 @@ def _normalize_import(raw: str, lang: str) -> str | None:
 
 def build_dep_index(concepts: list) -> dict[tuple[str, str], str]:
     """{ (ecosystem, dep_name): concept_id }  — built from Dependency concepts."""
+    t0 = time.perf_counter()
+    n_deps = 0
     index: dict[tuple[str, str], str] = {}
     for c in concepts:
         if c.type != "Dependency":
@@ -189,9 +193,10 @@ def build_dep_index(concepts: list) -> dict[tuple[str, str], str]:
                     ecosystem = tag[len("ecosystem:"):]
                     break
         if ecosystem:
-            # index on both exact title and lower-cased to handle npm case variations
             index[(ecosystem, c.title)] = c.concept_id
             index[(ecosystem, c.title.lower())] = c.concept_id
+            n_deps += 1
+    log.info(f"[perf]   build_dep_index: {time.perf_counter() - t0:.3f}s ({n_deps} deps, {len(index)} entries)")
     return index
 
 
@@ -202,8 +207,14 @@ def link_dependencies(concepts: list, stats: LinkStats) -> None:
     Dependency concepts gain body_extra["used_by"] = sorted list of module
     concept_ids (rendered by generator._body's Dependency table).
     """
+    t0 = time.perf_counter()
     dep_index = build_dep_index(concepts)
+    t1 = time.perf_counter()
+
     used_by: dict[str, set] = defaultdict(set)
+    n_modules = 0
+    n_imports_total = 0
+    n_lookups = 0
 
     for c in concepts:
         if c.type != "Module":
@@ -211,6 +222,8 @@ def link_dependencies(concepts: list, stats: LinkStats) -> None:
         raw_imports: list[str] = getattr(c, "imports", None) or []
         if not raw_imports:
             continue
+        n_modules += 1
+        n_imports_total += len(raw_imports)
 
         lang = next(
             (tag[len("lang:"):] for tag in c.tags if tag.startswith("lang:")),
@@ -229,6 +242,7 @@ def link_dependencies(concepts: list, stats: LinkStats) -> None:
             dep_id = None
             for eco in ecosystems:
                 dep_id = dep_index.get((eco, name)) or dep_index.get((eco, name.lower()))
+                n_lookups += 1
                 if dep_id:
                     break
 
@@ -242,11 +256,17 @@ def link_dependencies(concepts: list, stats: LinkStats) -> None:
                 c.related.append(dep_id)
             used_by[dep_id].add(c.concept_id)
 
+    t2 = time.perf_counter()
     by_id = {c.concept_id: c for c in concepts}
     for dep_id, module_ids in used_by.items():
         dep = by_id.get(dep_id)
         if dep is not None:
             dep.body_extra["used_by"] = sorted(module_ids)
+    t3 = time.perf_counter()
+
+    log.info(f"[perf]   link_dependencies: {t3 - t0:.3f}s total "
+             f"(index={t1-t0:.3f}s resolve={t2-t1:.3f}s used_by_write={t3-t2:.3f}s) "
+             f"[{n_modules} modules, {n_imports_total} imports, {n_lookups} lookups]")
 
 
 # ---------------------------------------------------------------------------
@@ -279,7 +299,9 @@ def _same_domain(a, b) -> bool:
     return dom_a is not None and dom_a == dom_b
 
 
-def _resolve_callee(caller, raw: str, name_index: dict[str, list]):
+def _resolve_callee(caller, raw: str, name_index: dict[str, list],
+                    file_index: dict[str, dict[str, list]] | None = None,
+                    domain_index: dict[str, dict[str, list]] | None = None):
     """Returns (resolved | None, [ambiguous candidates]).
 
     Resolution order (conservative):
@@ -287,24 +309,68 @@ def _resolve_callee(caller, raw: str, name_index: dict[str, list]):
       2. Exact name, same domain     → likely
       3. Globally unique name        → probable
       4. Multiple matches            → ambiguous (don't guess)
+
+    When *file_index* or *domain_index* are provided (precomputed), the
+    same-file and same-domain checks are O(1) dict lookups instead of
+    O(n) list comprehensions over the full candidate pool.
     """
     bare = raw.rsplit(".", 1)[-1]  # strip obj.method → method
     candidates = name_index.get(bare)
     if not candidates:
         return None, []
 
-    same_file = [c for c in candidates if _same_file(caller, c)]
-    if len(same_file) == 1:
-        return same_file[0], []
+    # Tier 1 — same file (O(1) with precomputed index)
+    if file_index is not None:
+        same_file = file_index.get(bare, {}).get(caller.resource, [])
+        if len(same_file) == 1:
+            return same_file[0], []
+    else:
+        same_file = [c for c in candidates if _same_file(caller, c)]
+        if len(same_file) == 1:
+            return same_file[0], []
 
-    same_dom = [c for c in candidates if _same_domain(caller, c)]
-    if len(same_dom) == 1:
-        return same_dom[0], []
+    # Tier 2 — same domain (O(1) with precomputed index)
+    if domain_index is not None:
+        dom = _tag_value(caller, "domain:")
+        if dom is not None:
+            same_dom = domain_index.get(bare, {}).get(dom, [])
+            if len(same_dom) == 1:
+                return same_dom[0], []
+    else:
+        same_dom = [c for c in candidates if _same_domain(caller, c)]
+        if len(same_dom) == 1:
+            return same_dom[0], []
 
+    # Tier 3 — globally unique name
     if len(candidates) == 1:
         return candidates[0], []
 
     return None, candidates   # ambiguous
+
+
+def _build_file_index(name_index: dict[str, list]) -> dict[str, dict[str, list]]:
+    """{ bare_name: { resource_path: [concept, ...] } }  — O(1) same-file lookup."""
+    idx: dict[str, dict[str, list]] = {}
+    for name, candidates in name_index.items():
+        by_file: dict[str, list] = {}
+        for c in candidates:
+            by_file.setdefault(c.resource, []).append(c)
+        idx[name] = by_file
+    return idx
+
+
+def _build_domain_index(name_index: dict[str, list]) -> dict[str, dict[str, list]]:
+    """{ bare_name: { domain: [concept, ...] } }  — O(1) same-domain lookup."""
+    idx: dict[str, dict[str, list]] = {}
+    for name, candidates in name_index.items():
+        by_domain: dict[str, list] = {}
+        for c in candidates:
+            dom = _tag_value(c, "domain:")
+            if dom is not None:
+                by_domain.setdefault(dom, []).append(c)
+        if by_domain:
+            idx[name] = by_domain
+    return idx
 
 
 def link_calls(concepts: list, stats: LinkStats) -> None:
@@ -314,39 +380,105 @@ def link_calls(concepts: list, stats: LinkStats) -> None:
     caller.possible_calls  (attribute added dynamically) = [ambiguous ids]
     callee.called_by   = [sorted caller concept_ids]
     """
+    t0 = time.perf_counter()
     name_index = _build_name_index(concepts)
+    t_build = time.perf_counter()
+
+    # Precompute O(1) lookup tables for same-file and same-domain resolution
+    file_index   = _build_file_index(name_index)
+    domain_index = _build_domain_index(name_index)
+    t_precomp = time.perf_counter()
+
+    # Local cache for _resolve_callee — keyed by (caller.resource, caller.domain, raw)
+    # Avoids redundant O(n) list scans when the same name is called from
+    # many functions in the same file (common for __init__, __call__, etc.).
+    _resolve_cache: dict[tuple, tuple] = {}
+
+    def _cached_resolve(caller, raw: str):
+        nonlocal _cache_hits, _cache_total
+        dom = _tag_value(caller, "domain:") or ""
+        key = (caller.resource, dom, raw)
+        cached = _resolve_cache.get(key)
+        if cached is not None:
+            _cache_hits += 1
+            return cached
+        result = _resolve_callee(caller, raw, name_index, file_index, domain_index)
+        _resolve_cache[key] = result
+        return result
+
+    _cache_hits = 0
+    _cache_total = 0
+
     by_id = {c.concept_id: c for c in concepts}
     called_by: dict[str, set] = defaultdict(set)
+
+    n_callers = 0
+    n_calls_total = 0
+    name_index_hits = 0
+
+    _profile_name_hits: dict[str, int] = defaultdict(int)
 
     for caller in concepts:
         raw_calls: list[str] = getattr(caller, "calls_raw", None) or []
         if not raw_calls:
             continue
+        n_callers += 1
+        n_calls_total += len(raw_calls)
 
         for raw in raw_calls:
-            resolved, ambiguous = _resolve_callee(caller, raw, name_index)
+            bare = raw.rsplit(".", 1)[-1]
+            candidates = name_index.get(bare)
+            if candidates:
+                name_index_hits += 1
+                _profile_name_hits[bare] = max(_profile_name_hits[bare], len(candidates))
+
+            _cache_total += 1
+            resolved, ambiguous = _cached_resolve(caller, raw)
             if resolved is not None:
                 if resolved.concept_id == caller.concept_id:
-                    continue   # skip self-recursion noise
-                if resolved.concept_id not in caller.calls:
+                    continue
+                _call_set = getattr(caller, '_call_set', None)
+                if _call_set is None:
+                    _call_set = set()
+                    caller._call_set = _call_set
+                if resolved.concept_id not in _call_set:
+                    _call_set.add(resolved.concept_id)
                     caller.calls.append(resolved.concept_id)
                 called_by[resolved.concept_id].add(caller.concept_id)
                 stats.calls_resolved += 1
             elif ambiguous:
+                _poss_set = getattr(caller, '_poss_set', None)
+                if _poss_set is None:
+                    _poss_set = set()
+                    caller._poss_set = _poss_set
                 if not hasattr(caller, "possible_calls"):
                     caller.possible_calls = []
                 for cand in ambiguous:
-                    if cand.concept_id not in caller.possible_calls:
+                    if cand.concept_id not in _poss_set:
+                        _poss_set.add(cand.concept_id)
                         caller.possible_calls.append(cand.concept_id)
                 stats.calls_ambiguous += 1
             else:
                 stats.calls_unresolved += 1
                 stats.unresolved_call_names.add(raw)
 
+    t2 = time.perf_counter()
+
     for callee_id, caller_ids in called_by.items():
         callee = by_id.get(callee_id)
         if callee is not None:
             callee.called_by = sorted(caller_ids)
+    t3 = time.perf_counter()
+
+    worst_names = sorted(_profile_name_hits.items(), key=lambda x: -x[1])[:10]
+
+    _cache_hit_pct = (1 - (_cache_total - _cache_hits) / _cache_total) * 100 if _cache_total else 0
+    log.info(f"[perf]   link_calls: {t3 - t0:.3f}s total "
+             f"(index={t_build-t0:.3f}s precomp={t_precomp-t_build:.3f}s resolve={t2-t_precomp:.3f}s "
+             f"called_by_write={t3-t2:.3f}s) "
+             f"[{n_callers} callers, {n_calls_total} calls, {name_index_hits} index hits, "
+             f"resolve-cache: {_cache_hits}/{_cache_total} ({_cache_hit_pct:.0f}%)]")
+    log.info(f"[perf]   link_calls worst-name pools: {worst_names}")
 
 
 # ---------------------------------------------------------------------------
@@ -357,9 +489,14 @@ def link_all(concepts: list) -> LinkStats:
     """Run both linking passes. Call once after scan_codebase() has
     assembled the full concept list (code + Dependency concepts) and
     before write_bundle() writes anything to disk."""
+    log.info(f"[perf]   link_all: {len(concepts)} concepts")
+    t0 = time.perf_counter()
     stats = LinkStats()
     link_dependencies(concepts, stats)
+    t1 = time.perf_counter()
     link_calls(concepts, stats)
+    t2 = time.perf_counter()
+    log.info(f"[perf]   link_all total: {t2 - t0:.3f}s  (deps={t1-t0:.3f}s calls={t2-t1:.3f}s)")
     return stats
 
 
