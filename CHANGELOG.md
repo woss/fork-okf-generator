@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.1.51] — 2026-07-19
+
+### Added
+
+- **Performance: 13× faster `okf generate`** — Comprehensive optimization pass on a 23 GB workspace benchmark (18K source files, 50+ projects). Total time reduced from 157s to 12s.
+  - **Filtered directory walker** — Replaced `Path.rglob("*")` with `os.walk()` + in-place dir pruning. Skips node_modules, .venv, .git before descending (84× faster walk). New `okf/_walk.py` module shared across generate, update, manifest, init. Verified: 221 user-written manifests still indexed; only vendored transitive deps excluded.
+  - **Parallel file parsing** — `ProcessPoolExecutor` (8 workers) for CPU-bound tree-sitter/AST parsing. Files processed 5× faster. Thread-safety fixes: double-checked locking on TreeSitterParser._lang(); removed racey `_lang_obj = None` reset in JSTSParser.
+  - **Cross-reference linker overhaul** — Precomputed file/domain indexes for O(1) same-file resolution. Resolution cache: 65% hit rate (128K of 198K calls). Set-based dedup replaces O(n) list membership. Total linker time: 9.5s → 0.55s (17× faster).
+  - **Concurrent bundle writing** — `ThreadPoolExecutor` (16 workers) + cached parent directory table eliminates redundant mkdir stat calls. Write stage: ~60s → 14s after threading.
+  - **Hand-rolled YAML frontmatter** — Replaced `yaml.safe_dump` with 140-line schema-specific serializer for the fixed OKF v0.2 schema. PyYAML time: 9.87s → 0.91s (10.8× faster). Falls back to `yaml.safe_dump` for unexpected types. Validated by 71 adversarial round-trip tests.
+- **Stage-level profiling instrumentation** — Every pipeline stage outputs `[perf]` log lines with timing. Benchmark runner (`bench_v3.py`) reports 3-run warm-cache median with stage breakdown.
+- **71 round-trip tests** — `tests/test_frontmatter.py` covers adversarial YAML strings: colons, quotes, Unicode, multiline, YAML keywords, numeric-looking strings, leading/trailing spaces, date collisions.
+
+### Changed
+
+- **`okf/_walk.py`** — New shared module: `walk_files()` + `walk_dirs()` replace `Path.rglob("*")` across 5 modules.
+- **`okf/frontmatter.py`** — New module: `dump_frontmatter()` replaces `yaml.safe_dump` for OKF frontmatter.
+- **`okf/generator.py`** — `scan_codebase()` uses walk_filtered + ProcessPoolExecutor. `write_bundle()` uses ThreadPoolExecutor + parent-dir cache. Full `[perf]` instrumentation.
+- **`okf/linker.py`** — Precomputed `file_index`/`domain_index` for O(1) resolution. Resolution cache (65% hit rate). Set-based dedup for `caller.calls` and `possible_calls`.
+- **`okf/parsers/base.py`** — Double-checked locking on `TreeSitterParser._lang()` for thread safety.
+- **`okf/parsers/javascript.py`** — Removed racey `_lang_obj = None` reset. Thread-safe TS/JS grammar selection.
+- **`okf/update.py`**, **`okf/manifest.py`**, **`okf/init.py`** — Use `walk_dirs()`/`walk_files()` from `_walk` module.
+- **`docs/performance.md`** — Full performance analysis: 157s → 12s engineering journey with stage-by-stage breakdown, bottleneck migration arc, 5 optimization tables, and safety-net documentation.
+
+### Infrastructure
+
+- 414 total tests (343 existing + 71 new frontmatter tests)
+- All existing tests pass unchanged — 0 regressions
+
 ## [0.1.50] — 2026-07-19
 
 ### Added
@@ -916,7 +945,8 @@ Run `--dry-run` first to preview changes. The migration is idempotent — runnin
 - 32 passing tests
 
 
-[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.50...HEAD
+[Unreleased]: https://github.com/UmairBaig8/okf-generator/compare/v0.1.51...HEAD
+[0.1.51]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.51
 [0.1.50]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.50
 [0.1.49]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.49
 [0.1.48]: https://github.com/UmairBaig8/okf-generator/releases/tag/v0.1.48

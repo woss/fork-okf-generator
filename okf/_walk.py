@@ -6,7 +6,6 @@ directories (saves ~95% of syscalls on repos with node_modules / .venv).
 """
 
 import os
-import sys
 from pathlib import Path
 from typing import Generator
 

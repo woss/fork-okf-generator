@@ -95,8 +95,6 @@ def _mp_parse_file(args: tuple) -> list:
     root = Path(root_str)
     try:
         from okf.parsers import get_parser
-        from okf.parsers.base import Concept
-        rel = str(path.relative_to(root))
         parser = get_parser(path.suffix.lower())
         if parser is None:
             return []
