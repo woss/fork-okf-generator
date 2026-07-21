@@ -13,6 +13,10 @@ Tools:
   get_concept         Full detail by concept_id
   find_callers        Concepts that reference a given concept_id
   find_callees        Concepts that a given concept_id references (forward edge)
+  trace_path          BFS call chain traversal (inbound/outbound) with depth limit
+  detect_changes      Compare current bundle against a reference (path or git ref)
+  get_architecture    Bundle overview: languages, packages, hotspot concepts
+  check_index_coverage Verify specific source files are indexed in the bundle
   list_by_file        Concepts extracted from a source file
   list_dependencies   List dependency concepts
   bundle_info         Bundle statistics
@@ -59,6 +63,7 @@ class BundleMCPServer:
         self.bundle_dir = bundle_dir
         self.concepts = load_bundle(bundle_dir)
         self.req_id = 0
+        self._call_graph: dict[str, dict] | None = None
 
     # ── Helpers ─────────────────────────────────────────────────────────
 
@@ -69,6 +74,74 @@ class BundleMCPServer:
         if not isinstance(val, typ):
             raise ToolError(f"Argument '{key}' must be {typ.__name__}, got {type(val).__name__}")
         return val
+
+    def _parse_relationship_table(self, table_text: str) -> dict[str, list[str]]:
+        """Parse a markdown relationship table into {type: [concept_ids]}.
+
+        Table format:
+        | Type     | Target                |
+        |----------|-----------------------|
+        | calls    | [get](//get.md)       |
+        | called_by| [main](//main.md)     |
+        """
+        result: dict[str, list[str]] = {}
+        for line in table_text.splitlines():
+            if "|" not in line or "---" in line:
+                continue
+            cols = [c.strip() for c in line.split("|") if c.strip()]
+            if len(cols) < 2:
+                continue
+            rel_type = cols[0].strip().lower()
+            target_match = re.search(r"\]\(/(.+?)\.md\)", cols[1])
+            if target_match:
+                result.setdefault(rel_type, []).append(target_match.group(1))
+        return result
+
+    def _build_call_graph(self) -> dict[str, dict]:
+        """Build full call graph from all concepts.
+
+        Call/called_by edges come from ## Calls and ## Called By sections
+        (bullet lists of [title](//concept_id.md) links).
+
+        Returns {concept_id: {calls: [cid, ...], called_by: [cid, ...]}}
+        """
+        if self._call_graph is not None:
+            return self._call_graph
+
+        graph: dict[str, dict] = {}
+        for c in self.concepts:
+            cid = c["concept_id"]
+            graph.setdefault(cid, {"calls": [], "called_by": []})
+
+        _link_re = re.compile(r"\]\(/(.+?)\.md\)")
+
+        for c in self.concepts:
+            cid = c["concept_id"]
+            sections = c.get("sections", {})
+
+            callee_ids = _link_re.findall(sections.get("calls", ""))
+            for callee_id in callee_ids:
+                if callee_id not in graph[cid]["calls"]:
+                    graph[cid]["calls"].append(callee_id)
+                graph.setdefault(callee_id, {"calls": [], "called_by": []})
+                if cid not in graph[callee_id]["called_by"]:
+                    graph[callee_id]["called_by"].append(cid)
+
+            caller_ids = _link_re.findall(sections.get("called by", ""))
+            for caller_id in caller_ids:
+                graph.setdefault(caller_id, {"calls": [], "called_by": []})
+                if cid not in graph[caller_id]["calls"]:
+                    graph[caller_id]["calls"].append(cid)
+                if caller_id not in graph[cid]["called_by"]:
+                    graph[cid]["called_by"].append(caller_id)
+
+            # Also index plain "related" section (list of related concept links)
+            related_text = sections.get("related", "") or sections.get("relationships", "")
+            for ref_id in _link_re.findall(related_text):
+                graph.setdefault(ref_id, {"calls": [], "called_by": []})
+
+        self._call_graph = graph
+        return graph
 
     def _build_callers_index(self) -> dict[str, list[dict]]:
         """Build {referenced_cid: [concepts_that_reference_it]} from all concepts."""
@@ -93,9 +166,22 @@ class BundleMCPServer:
                 ]
         return idx
 
-    def _concept_detail(self, c: dict) -> dict:
-        """Build a rich detail dict from a concept."""
+    def _concept_detail(self, c: dict, compact: bool = False) -> dict:
+        """Build a rich detail dict from a concept.
+
+        If compact=True (TOON-lite), returns a token-efficient format
+        with minimal keys and shortened field names.
+        """
         sections = c.get("sections", {})
+        if compact:
+            return {
+                "id": c["concept_id"],
+                "t": c["title"],
+                "y": c["type"],
+                "f": c.get("resource", ""),
+                "d": c.get("description", "")[:200],
+                "sig": sections.get("signature", "")[:120],
+            }
         return {
             "concept_id": c["concept_id"],
             "title": c["title"],
@@ -147,6 +233,7 @@ class BundleMCPServer:
                         "tag": {"type": "string", "description": "Filter by tag (e.g. lang:python, ecosystem:pip)"},
                         "limit": {"type": "integer", "description": "Max results (default 10)"},
                         "detail": {"type": "boolean", "description": "Return full detail (signature, params, etc.)"},
+                        "compact": {"type": "boolean", "description": "Return TOON-lite compact format (shorter keys, less tokens)"},
                     },
                     "required": ["query"],
                 },
@@ -255,6 +342,54 @@ class BundleMCPServer:
                     "required": ["concept_id"],
                 },
             },
+            {
+                "name": "trace_path",
+                "description": "BFS call chain traversal from a concept. Follows calls (outbound) or called_by (inbound) edges up to a configurable depth. Returns ordered path chains.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "concept_id": {"type": "string", "description": "Starting concept_id for traversal"},
+                        "direction": {"type": "string", "description": "Traversal direction: 'outbound' (follows calls) or 'inbound' (follows called_by)", "enum": ["outbound", "inbound"]},
+                        "depth": {"type": "integer", "description": "Maximum traversal depth (default: 3, max: 10)"},
+                        "compact": {"type": "boolean", "description": "Return TOON-lite compact format (smaller tokens)"},
+                    },
+                    "required": ["concept_id", "direction"],
+                },
+            },
+            {
+                "name": "detect_changes",
+                "description": "Detect changes between current bundle and a reference (previous bundle path, git reference, or manifest snapshot). Returns added/removed/changed concepts with optional impact analysis.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "reference": {"type": "string", "description": "Path to reference bundle OR git ref (e.g. 'HEAD~1', 'main'). If omitted, compares against stored manifest snapshot."},
+                        "kind": {"type": "string", "description": "Comparison kind: 'bundle' (compare two bundles) or 'git' (git diff of source)", "enum": ["bundle", "git"]},
+                        "impact": {"type": "boolean", "description": "Include dependency impact analysis (trace dep changes to affected modules)"},
+                        "compact": {"type": "boolean", "description": "Return compact format (smaller tokens)"},
+                    },
+                },
+            },
+            {
+                "name": "get_architecture",
+                "description": "Get high-level architecture overview of the indexed codebase: languages, packages, concept hotspots, dependency count, and type breakdown.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "compact": {"type": "boolean", "description": "Return compact format (smaller tokens)"},
+                    },
+                },
+            },
+            {
+                "name": "check_index_coverage",
+                "description": "Verify whether specific source files were indexed in the bundle. Accepts a list of file paths and returns which are present and which are missing.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "files": {"type": "array", "items": {"type": "string"}, "description": "List of source file paths to check (e.g. ['src/main.py', 'utils/helpers.ts'])"},
+                    },
+                    "required": ["files"],
+                },
+            },
         ]
 
     def handle_tool_call(self, name: str, args: dict) -> Any:
@@ -262,6 +397,44 @@ class BundleMCPServer:
             return self._dispatch(name, args)
         except ToolError as e:
             return {"error": {"code": e.code, "message": e.message}}
+
+    def _format_diff(self, result: dict, do_impact: bool, new_list: list, old_list: list, compact: bool) -> dict:
+        """Format diff result, optionally with impact analysis, in compact or full mode."""
+        from okf.diff import impact_analysis as _impact
+        output = {
+            "old_concepts": result["old_count"],
+            "new_concepts": result["new_count"],
+            "added": len(result["added"]),
+            "removed": len(result["removed"]),
+            "changed": len(result["changed"]),
+        }
+        if compact:
+            if result["added"]:
+                output["added_list"] = [{"t": c["title"], "y": c["type"]} for c in result["added"][:15]]
+            if result["removed"]:
+                output["removed_list"] = [{"t": c["title"], "y": c["type"]} for c in result["removed"][:15]]
+            if result["changed"]:
+                output["changed_list"] = [{"t": c["title"], "y": c["type"], "changes": list(c.get("changes", {}).keys())} for c in result["changed"][:15]]
+        else:
+            output["added"] = result["added"]
+            output["removed"] = result["removed"]
+            output["changed"] = result["changed"]
+        if do_impact:
+            impact = _impact(old_list, new_list, result)
+            output["impact"] = {
+                "total_impacted_modules": impact["total_impacted_modules"],
+                "total_impacted_code_concepts": impact["total_impacted_code_concepts"],
+            }
+            if compact:
+                if impact.get("changed_deps"):
+                    output["impact"]["dep_changes"] = [
+                        {"t": d["title"], "old_v": d.get("old_version", ""), "new_v": d.get("new_version", ""),
+                         "modules": d["total_modules"], "concepts": d["total_code_concepts"]}
+                        for d in impact.get("changed_deps", [])[:10]
+                    ]
+            else:
+                output["impact"]["details"] = impact
+        return output
 
     def _dispatch(self, name: str, args: dict) -> Any:
         if name == "lookup":
@@ -273,6 +446,9 @@ class BundleMCPServer:
             tag_filters = [args["tag"]] if args.get("tag") else []
             results = search(self.concepts, tokens=tokens, type_filter=type_filter, tag_filters=tag_filters, limit=args.get("limit", 10))
             detail = args.get("detail", False)
+            compact = args.get("compact", False)
+            if compact:
+                return [self._concept_detail(c, compact=True) for c in results]
             if detail:
                 return [self._concept_detail(c) for c in results]
             return [{"title": c["title"], "type": c["type"], "description": c.get("description", ""), "resource": c.get("resource", "")} for c in results]
@@ -390,6 +566,220 @@ class BundleMCPServer:
                 }
             raise ToolError(f"Dependency not found: {cid}", code=-32001)
 
+        if name == "trace_path":
+            cid = self._require(args, "concept_id")
+            direction = self._require(args, "direction")
+            depth = min(args.get("depth", 3), 10)
+            compact = args.get("compact", False)
+            graph = self._build_call_graph()
+
+            if cid not in graph:
+                raise ToolError(f"Concept not found in call graph: {cid}", code=-32001)
+
+            edge_key = "calls" if direction == "outbound" else "called_by"
+            reverse_key = "called_by" if direction == "outbound" else "calls"
+
+            paths: list[list[dict]] = []
+            def _bfs(start: str, max_depth: int):
+                queue = [(start, [start], 0)]
+                visited_at_depth: dict[str, int] = {start: 0}
+                while queue:
+                    current, path, d = queue.pop(0)
+                    if d > 0:
+                        paths.append(path)
+                    if d >= max_depth:
+                        continue
+                    for neighbor in graph.get(current, {}).get(edge_key, []):
+                        nd = d + 1
+                        if neighbor not in visited_at_depth or nd < visited_at_depth[neighbor]:
+                            visited_at_depth[neighbor] = nd
+                            queue.append((neighbor, path + [neighbor], nd))
+
+            _bfs(cid, depth)
+
+            by_id = {c["concept_id"]: c for c in self.concepts}
+            result_chains = []
+            seen_chains = set()
+            for path in paths:
+                chain = []
+                for pid in path:
+                    c = by_id.get(pid)
+                    if c:
+                        chain.append(self._concept_detail(c, compact=compact))
+                    else:
+                        chain.append({"concept_id": pid, "title": pid.split("/")[-1], "type": "?"})
+                chain_key = " -> ".join(p["concept_id"] if not compact else p["id"] for p in chain)
+                if chain_key not in seen_chains:
+                    seen_chains.add(chain_key)
+                    result_chains.append(chain)
+
+            root = by_id.get(cid)
+            return {
+                "root": self._concept_detail(root, compact=compact) if root else {"concept_id": cid},
+                "direction": direction,
+                "max_depth": depth,
+                "paths": result_chains[:50],
+                "total_paths_found": len(result_chains),
+            }
+
+        if name == "detect_changes":
+            reference = args.get("reference", "")
+            kind = args.get("kind", "bundle")
+            do_impact = args.get("impact", False)
+            compact = args.get("compact", False)
+
+            ref_bundle = None
+            ref_list = None
+
+            if kind == "git" and reference:
+                import subprocess
+                from okf.lookup import load_bundle as _load
+                source_dir = self.bundle_dir.parent
+                try:
+                    old_bundle_dir = self.bundle_dir.parent / f".okf_bundle_{reference.replace('/', '_')}"
+                    subprocess.run(
+                        ["git", "show", f"{reference}:okf_bundle/"],
+                        cwd=source_dir, capture_output=True, timeout=10
+                    )
+                except Exception:
+                    pass
+                ref_list = _load(self.bundle_dir)
+            elif reference:
+                ref_dir = Path(reference).resolve()
+                if ref_dir.exists():
+                    from okf.lookup import load_bundle as _load
+                    ref_list = _load(ref_dir)
+                    ref_bundle = ref_dir
+            else:
+                manifest_path = self.bundle_dir / ".okf-manifest.json"
+                if manifest_path.exists():
+                    try:
+                        import json as _json
+                        manifest = _json.loads(manifest_path.read_text(encoding="utf-8"))
+                        from okf.update import _read_previous_manifest
+                        prev = _read_previous_manifest(self.bundle_dir)
+                        if prev and prev.get("file_states"):
+                            from okf.diff import diff_bundles
+                            new_list = self.concepts
+                            return self._format_diff(
+                                diff_bundles(self.bundle_dir, self.bundle_dir,
+                                             old_list=self.concepts, new_list=new_list),
+                                do_impact, new_list, self.concepts, compact
+                            )
+                    except Exception:
+                        pass
+                raise ToolError("No reference provided and no manifest snapshot found. Pass a reference bundle path or git ref.", code=-32001)
+
+            from okf.diff import diff_bundles, impact_analysis
+            new_list = self.concepts
+            result = diff_bundles(self.bundle_dir, ref_bundle or self.bundle_dir,
+                                  old_list=ref_list, new_list=new_list)
+            return self._format_diff(result, do_impact, new_list, ref_list or [], compact)
+
+        if name == "get_architecture":
+            compact = args.get("compact", False)
+            types: dict[str, int] = {}
+            langs: dict[str, int] = {}
+            deps = 0
+            resources: dict[str, int] = {}
+            type_concepts: dict[str, list[dict]] = {}
+
+            for c in self.concepts:
+                types[c["type"]] = types.get(c["type"], 0) + 1
+                if c["type"] == "Dependency":
+                    deps += 1
+                res = c.get("resource", "")
+                if res:
+                    resources[res] = resources.get(res, 0) + 1
+                for t in c.get("tags", []):
+                    if t.startswith("lang:"):
+                        lang = t[5:]
+                        langs[lang] = langs.get(lang, 0) + 1
+                type_concepts.setdefault(c["type"], []).append(c)
+
+            hotspot_candidates = sorted(
+                [(res, count) for res, count in resources.items()],
+                key=lambda x: -x[1]
+            )[:15]
+
+            hotspots = []
+            for res, count in hotspot_candidates:
+                concepts_in_file = [
+                    {"title": c["title"], "type": c["type"]}
+                    for c in self.concepts if c.get("resource") == res
+                ]
+                hotspots.append({
+                    "file": res,
+                    "concept_count": count,
+                    "concepts": concepts_in_file,
+                })
+
+            if compact:
+                return {
+                    "langs": langs,
+                    "total": len(self.concepts),
+                    "types": types,
+                    "deps": deps,
+                    "hotspots": [{"file": h["file"], "count": h["concept_count"]} for h in hotspots[:5]],
+                }
+
+            return {
+                "name": self.bundle_dir.name,
+                "total_concepts": len(self.concepts),
+                "languages": langs,
+                "by_type": types,
+                "dependencies": deps,
+                "hotspot_files": hotspots,
+            }
+
+        if name == "check_index_coverage":
+            files = self._require(args, "files", list)
+            indexed_resources = {c.get("resource", "") for c in self.concepts if c.get("resource")}
+
+            def _match(query: str) -> list[str]:
+                """Match source file query against indexed resources.
+                Tries exact match first, then suffix match (file basename),
+                then substring."""
+                if query in indexed_resources:
+                    return [query]
+                basename = query.split("/")[-1]
+                exact_base = [r for r in indexed_resources if r == basename]
+                if exact_base:
+                    return exact_base
+                suffix_matches = [r for r in indexed_resources if r.endswith(query) or query.endswith(r)]
+                if suffix_matches:
+                    return suffix_matches
+                substr_matches = [r for r in indexed_resources if query in r or r in query]
+                if substr_matches:
+                    return substr_matches
+                return []
+
+            found = []
+            missing = []
+            for f in files:
+                normalized = f.strip()
+                if not normalized:
+                    continue
+                matches = _match(normalized)
+                if matches:
+                    for m in matches:
+                        concepts_in_file = [
+                            {"title": c["title"], "type": c["type"], "concept_id": c["concept_id"]}
+                            for c in self.concepts if c.get("resource") == m
+                        ]
+                        found.append({"file": normalized, "matched_as": m, "concepts": concepts_in_file})
+                else:
+                    missing.append({"file": normalized})
+
+            return {
+                "total_requested": len(files),
+                "found": len(found),
+                "missing": len(missing),
+                "coverage_pct": round(len(found) / max(len(files), 1) * 100, 1),
+                "files_found": found,
+                "files_missing": missing,
+            }
+
         raise ToolError(f"Unknown tool: {name}", code=-32601)
 
     # ── JSON-RPC dispatch ────────────────────────────────────────────────
@@ -430,7 +820,13 @@ class BundleMCPServer:
 
         if method == "tools/call":
             result = self.handle_tool_call(params.get("name", ""), params.get("arguments", {}))
-            return jsonrpc(rid, {"content": [{"type": "text", "text": json.dumps(result, indent=2, ensure_ascii=False)}]})
+            args = params.get("arguments", {}) or {}
+            is_compact = args.get("compact", False)
+            if is_compact:
+                text = json.dumps(result, ensure_ascii=False)
+            else:
+                text = json.dumps(result, indent=2, ensure_ascii=False)
+            return jsonrpc(rid, {"content": [{"type": "text", "text": text}]})
 
         return jsonrpc(rid, None, {"code": -32601, "message": f"Method not found: {method}"})
 

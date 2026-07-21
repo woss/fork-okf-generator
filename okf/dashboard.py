@@ -16,52 +16,66 @@ import uvicorn
 TEMPLATE_PATH = Path(__file__).parent / "templates" / "viz-template.html"
 
 
-def build_app(bundle_dir: Path):
-    from okf.lookup import load_bundle
+def _resolve_source(bundle_dir: Path, resource: str, line_range: str) -> str:
+    """Read source code from original file using line range from concept."""
+    if not resource or not line_range:
+        return ""
+    import re
+    m = re.search(r"Lines (\d+)\s*[–-]\s*(\d+)", line_range)
+    if not m:
+        return ""
+    start, end = int(m.group(1)), int(m.group(2))
 
-    concepts = load_bundle(bundle_dir, use_cache=False)
-    by_id = {c["concept_id"]: c for c in concepts}
+    # Find source root from bundle index.md
+    source_roots = [bundle_dir.parent.resolve(), Path.cwd().resolve()]
+    index_md = bundle_dir / "index.md"
+    if index_md.exists():
+        try:
+            import yaml
+            parts = index_md.read_text(encoding="utf-8").split("---", 2)
+            if len(parts) >= 2:
+                fm = yaml.safe_load(parts[1]) or {}
+                src = fm.get("source_root")
+                if src:
+                    source_roots.insert(0, Path(str(src)).resolve())
+        except Exception:
+            pass
+
+    for root in source_roots:
+        src_path = root / resource
+        try:
+            if src_path.exists():
+                lines = src_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                if start <= len(lines):
+                    return "\n".join(lines[max(0, start - 1):end])
+        except Exception:
+            continue
+    return ""
+
+
+def build_app(bundle_dir: Path, graph_max_nodes: int = 2000):
+    from okf.storage import open_store
+
+    store = open_store(bundle_dir)
 
     app = FastAPI(title="OKF Dashboard", version="0.1")
-    app.state.concept_count = len(concepts)
-    app.state.concepts = concepts
+    app.state.concept_count = store.get_info()["total"]
+    app.state.store = store
+    app.state.graph_max_nodes = graph_max_nodes
 
     @app.get("/api/info")
     def bundle_info():
-        types: dict[str, int] = {}
-        langs: dict[str, int] = {}
-        ecosystems: dict[str, int] = {}
-        for c in concepts:
-            types[c["type"]] = types.get(c["type"], 0) + 1
-            for t in c.get("tags", []):
-                if t.startswith("lang:") and t != "lang:manifest":
-                    langs[t[5:]] = langs.get(t[5:], 0) + 1
-                if t.startswith("ecosystem:"):
-                    ecosystems[t[10:]] = ecosystems.get(t[10:], 0) + 1
-        return {
-            "name": bundle_dir.name,
-            "total": len(concepts),
-            "types": types,
-            "languages": langs,
-            "ecosystems": ecosystems,
-        }
+        info = store.get_info()
+        info["name"] = bundle_dir.name
+        return info
 
     @app.get("/api/types")
     def list_types():
-        types: dict[str, int] = {}
-        for c in concepts:
-            types[c["type"]] = types.get(c["type"], 0) + 1
-        return [{"type": k, "count": v} for k, v in sorted(types.items(), key=lambda x: -x[1])]
+        return store.get_types()
 
     @app.get("/api/languages")
     def list_languages():
-        langs: dict[str, int] = {}
-        for c in concepts:
-            for t in c.get("tags", []):
-                if t.startswith("lang:") and t != "lang:manifest":
-                    lang = t[5:]
-                    langs[lang] = langs.get(lang, 0) + 1
-        return [{"language": k, "count": v} for k, v in sorted(langs.items(), key=lambda x: -x[1])]
+        return store.get_languages()
 
     @app.get("/api/search")
     def search(
@@ -70,13 +84,8 @@ def build_app(bundle_dir: Path):
         tag: str = Query("", description="Filter by tag"),
         limit: int = Query(80, description="Max results"),
     ):
-        from okf.lookup import search as _search
-
-        tokens = q.split() if q else []
         tag_filters = [tag] if tag else []
-        results = _search(
-            concepts, tokens=tokens, type_filter=type_filter, tag_filters=tag_filters, limit=limit
-        )
+        results = store.search(query=q, type_filter=type_filter, tag_filters=tag_filters, limit=limit)
         return [
             {
                 "concept_id": c["concept_id"],
@@ -91,11 +100,11 @@ def build_app(bundle_dir: Path):
 
     @app.get("/api/concept/{concept_id:path}")
     def get_concept(concept_id: str):
-        c = by_id.get(concept_id)
+        c = store.get(concept_id)
         if not c:
             from fastapi import HTTPException
-
             raise HTTPException(status_code=404, detail="Concept not found")
+
         sections = c.get("sections", {})
         related = []
         for line in sections.get("related", "").splitlines():
@@ -122,11 +131,13 @@ def build_app(bundle_dir: Path):
             if t.startswith("lang:") and t != "lang:manifest":
                 lang = t[5:]
                 break
+
         def _bullets(text: str) -> list[str]:
             if not text:
                 return []
             return [re.sub(r'^-\s*`?|`$', '', line).strip() for line in text.strip().splitlines()
                     if line.strip().startswith('- ')]
+
         return {
             "concept_id": c["concept_id"],
             "title": c["title"],
@@ -139,7 +150,7 @@ def build_app(bundle_dir: Path):
             "docstring": sections.get("docstring", ""),
             "parameters": sections.get("parameters", ""),
             "returns": sections.get("returns", ""),
-            "source": sections.get("source", ""),
+            "source": _resolve_source(bundle_dir, c.get("resource", ""), sections.get("source", "")),
             "related": related,
             "calls": calls,
             "called_by": called_by,
@@ -153,63 +164,15 @@ def build_app(bundle_dir: Path):
 
     @app.get("/api/graph")
     def graph(max_nodes: int = Query(200)):
-
-        # All concepts (up to max_nodes), prefer non-Dependency
-        scored = [(c["type"] != "Dependency", sum(1 for t in c.get("tags", []) if t.startswith("lang:")), c["concept_id"]) for c in concepts]
-        ranked = [c for _, c in sorted(zip(scored, concepts), key=lambda x: (-x[0][0], -x[0][1], x[0][2]))]
-        selected = {c["concept_id"] for c in ranked[:max_nodes]}
-
-        nodes = []
-        for c in concepts:
-            if c["concept_id"] not in selected:
-                continue
-            nodes.append({
-                "id": c["concept_id"],
-                "label": c["title"],
-                "title": f"{c['type']}: {c['title']}",
-                "group": c["type"],
-            })
-
-        edges = []
-        for c in concepts:
-            cid = c["concept_id"]
-            if cid not in selected:
-                continue
-            secs = c.get("sections", {})
-            # related / calls / called_by
-            for rel_type in ("related", "calls"):
-                for line in secs.get(rel_type, "").splitlines():
-                    m = re.search(r"\]\(/(.+?)\.md\)", line)
-                    if m and m.group(1) in selected:
-                        edges.append({"from": cid, "to": m.group(1), "type": rel_type})
-            for line in secs.get("called by", "").splitlines():
-                m = re.search(r"\]\(/(.+?)\.md\)", line)
-                if m and m.group(1) in selected:
-                    edges.append({"from": m.group(1), "to": cid, "type": "called_by"})
-            for line in secs.get("used by", "").splitlines():
-                m = re.search(r"\]\(/(.+?)\.md\)", line)
-                if m and m.group(1) in selected:
-                    edges.append({"from": m.group(1), "to": cid, "type": "uses"})
-            # relationships table
-            rel_table = secs.get("relationships", "")
-            if rel_table:
-                for line in rel_table.splitlines():
-                    if not line.startswith("|"):
-                        continue
-                    cells = [c.strip() for c in line.split("|")[1:-1]]
-                    if len(cells) >= 2:
-                        rt = cells[0].lower()
-                        m = re.search(r"\(/([^)]+)\.md\)", cells[1])
-                        if m and m.group(1) in selected:
-                            edges.append({"from": cid, "to": m.group(1), "type": rt})
-
-        return {"nodes": nodes, "edges": edges, "total": len(concepts), "shown": len(nodes)}
+        g = store.get_graph(max_nodes=max_nodes)
+        return g
 
     @app.get("/")
     def index():
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         html = html.replace("{DYNAMIC_FLAG}", "true")
         html = html.replace("{BUNDLE_DATA}", "null")
+        html = html.replace("{GRAPH_MAX_NODES}", str(graph_max_nodes))
         return HTMLResponse(html)
 
     return app
@@ -225,6 +188,8 @@ def main():
     parser.add_argument("--port", "-p", type=int, default=8700, help="Port (default: 8700)")
     parser.add_argument("--host", default="127.0.0.1", help="Host (default: 127.0.0.1)")
     parser.add_argument("--open", "-o", action="store_true", help="Open browser automatically")
+    parser.add_argument("--memory", action="store_true", help="Force in-memory mode (no SQLite)")
+    parser.add_argument("--graph-nodes", type=int, default=2000, help="Max nodes in graph view (default: 2000)")
     args = parser.parse_args()
 
     bundle_dir = Path(args.bundle_dir).resolve()
@@ -232,7 +197,7 @@ def main():
         print(f"ERROR: Bundle not found: {bundle_dir}", file=sys.stderr)
         sys.exit(1)
 
-    app = build_app(bundle_dir)
+    app = build_app(bundle_dir, graph_max_nodes=args.graph_nodes)
     url = f"http://{args.host}:{args.port}"
     print(f"  OKF Dashboard: {url}")
     print(f"  Bundle: {bundle_dir.name} ({app.state.concept_count} concepts)")

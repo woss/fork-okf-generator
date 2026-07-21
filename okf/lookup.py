@@ -66,12 +66,14 @@ def _parse_md(path: Path, bundle_dir: Path) -> dict | None:
     if not text.startswith("---"):
         return None
 
-    parts = text.split("---", 2)
-    if len(parts) < 3:
+    import re as _re
+    m = _re.match(r"^---\s*\n(.*?)\n---", text, _re.DOTALL)
+    if not m:
         return None
+    fm_text = m.group(1)
 
     try:
-        fm = yaml.safe_load(parts[1]) or {}
+        fm = yaml.safe_load(fm_text) or {}
     except Exception:
         return None
 
@@ -79,7 +81,7 @@ def _parse_md(path: Path, bundle_dir: Path) -> dict | None:
     if not ctype or ctype in {"Index", "Log"}:
         return None
 
-    body = parts[2].strip()
+    body = text[m.end():].strip()
 
     # parse sections
     sections: dict[str, str] = {}

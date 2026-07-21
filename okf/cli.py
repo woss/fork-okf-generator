@@ -109,19 +109,124 @@ def _install_agent(agent: str):
         print(f"Cline rules → {target}")
         print("  Tip: also run 'okf mcp --install' to set up MCP tools (preferred over shell commands)")
 
+    elif agent == "vscode":
+        tgt_md = root / ".vscode" / "okf-knowledge.md"
+        tgt_json = root / ".vscode" / "extensions.json"
+        if not _maybe_overwrite(tgt_md.parent, "VS Code config"):
+            tgt_md.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            tgt_md.parent.mkdir(parents=True, exist_ok=True)
+        tgt_md.write_text(_agent_rules("VS Code (via Cline/Copilot)"))
+        ext_cfg = {"recommendations": ["continue.continue"]}
+        if tgt_json.exists():
+            try:
+                import json as _json
+                existing = _json.loads(tgt_json.read_text())
+                existing.setdefault("recommendations", [])
+                if "continue.continue" not in existing["recommendations"]:
+                    existing["recommendations"].append("continue.continue")
+                ext_cfg = existing
+            except Exception:
+                pass
+        tgt_json.write_text(json.dumps(ext_cfg, indent=2) + "\n")
+        print(f"VS Code config → {tgt_md}")
+        print(f"VS Code extensions → {tgt_json} (recommends Continue.dev)")
+
+    elif agent == "continue":
+        config_dir = Path.home() / ".continue"
+        if not config_dir.exists():
+            config_dir = root / ".continue"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        target = config_dir / "config.json"
+        if not _maybe_overwrite(target, "Continue config"):
+            return
+        mcp_entry = {"command": "okf", "args": ["mcp", str((root / "okf_bundle").resolve())]}
+        cfg = {"experimental": {"mcpServers": {"okf-generator": mcp_entry}}}
+        if target.exists():
+            try:
+                import json as _json
+                existing = _json.loads(target.read_text())
+                existing.setdefault("experimental", {}).setdefault("mcpServers", {})["okf-generator"] = mcp_entry
+                cfg = existing
+            except Exception:
+                pass
+        target.write_text(json.dumps(cfg, indent=2) + "\n")
+        print(f"Continue config → {target}")
+        print("  Restart Continue.dev to pick up changes.")
+
+    elif agent == "zed":
+        target = root / ".zed" / "settings.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        rules_target = root / ".zed" / "okf.md"
+        rules_target.write_text(_agent_rules("Zed"))
+        mcp_entry = {"command": "okf", "args": ["mcp", str((root / "okf_bundle").resolve())]}
+        cfg = {"mcp_servers": {"okf-generator": mcp_entry}}
+        if target.exists():
+            try:
+                import json as _json
+                existing = _json.loads(target.read_text())
+                existing.setdefault("mcp_servers", {})["okf-generator"] = mcp_entry
+                cfg = existing
+            except Exception:
+                pass
+        target.write_text(json.dumps(cfg, indent=2) + "\n")
+        print(f"Zed settings → {target}")
+        print(f"Zed rules → {rules_target}")
+
+    elif agent == "aider":
+        target = root / ".aider.rules.md"
+        if not _maybe_overwrite(target, "Aider rules"):
+            return
+        target.write_text(_agent_rules("Aider"))
+        print(f"Aider rules → {target}")
+        print("  Aider loads .aider.rules.md automatically.")
+
+    elif agent == "codex":
+        print("OpenAI Codex CLI reads AGENTS.md automatically (via opencode agent setup).")
+        print("  Run: okf install opencode")
+        print("  Or: okf mcp --install  (for MCP-based integration)")
+
+    elif agent == "gemini":
+        target = root / ".gemini" / "instructions.md"
+        if not _maybe_overwrite(target, "Gemini CLI instructions"):
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(_agent_rules("Gemini CLI"))
+        print(f"Gemini CLI instructions → {target}")
+        print("  Gemini CLI supports project-level instruction files.")
+
+    elif agent == "warp":
+        target = root / ".warp" / "rules" / "okf-knowledge.md"
+        if not _maybe_overwrite(target, "Warp rules"):
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(_agent_rules("Warp"))
+        print(f"Warp rules → {target}")
+
+    elif agent == "roo":
+        for candidate_name in (".clinerules", ".roorules"):
+            target = root / candidate_name
+            if not _maybe_overwrite(target, f"Roo Code rules ({candidate_name})"):
+                continue
+            target.write_text(_agent_rules("Roo Code"))
+            print(f"Roo Code rules → {target}")
+            break
+
     elif agent == "mcp":
         _install_mcp()
         return
 
     elif agent == "all":
-        for a in ("claude", "opencode", "copilot", "cursor", "windsurf", "cline"):
+        all_agents = ("claude", "opencode", "copilot", "cursor", "windsurf", "cline",
+                      "vscode", "continue", "zed", "aider", "codex", "gemini", "warp", "roo")
+        for a in all_agents:
             _install_agent(a)
         _install_agent("mcp")
         return
 
     else:
         print(f"Unknown agent: {agent!r}", file=sys.stderr)
-        print("Available: claude, opencode, copilot, cursor, windsurf, cline, mcp, all", file=sys.stderr)
+        print("Available: claude, opencode, copilot, cursor, windsurf, cline, vscode, continue, zed, aider, codex, gemini, warp, roo, mcp, all", file=sys.stderr)
         print("Note: OpenAI Codex reads AGENTS.md — use 'okf install opencode' to set it up.", file=sys.stderr)
         sys.exit(1)
 
@@ -210,13 +315,18 @@ Skill installation (instructions/rules for the AI):
   cursor      Add Cursor rules (.cursorrules)
   windsurf    Add Windsurf rules (.windsurfrules)
   cline       Add Cline rules (.clinerules)
-
-  Note: OpenAI Codex (CLI + VS Code) reads AGENTS.md — use `okf install opencode`
-  to set it up. Codex is covered automatically via the same AGENTS.md convention.
+  vscode      Add VS Code recommendations + knowledge markdown (.vscode/)
+  continue    Register MCP server in Continue.dev config (~/.continue/config.json)
+  zed         Add MCP server + rules (.zed/settings.json)
+  aider       Add Aider rules (.aider.rules.md)
+  codex       Instructions for OpenAI Codex CLI (reads AGENTS.md)
+  gemini      Add Gemini CLI instructions (.gemini/instructions.md)
+  warp        Add Warp rules (.warp/rules/)
+  roo         Add Roo Code rules (.roorules or .clinerules)
 
 MCP server registration (preferred — gives agent direct tools):
   mcp         Register OKF MCP server in OpenCode + Claude configs
-  all         Install skills for all agents + register MCP
+  all         Install skills for all 14 agents + register MCP
 
 Tip: MCP tools (lookup, find_callers, etc.) are preferred over RUN commands.
 Run 'okf mcp --install' for the same effect as 'okf install mcp'.
@@ -282,7 +392,7 @@ def main():
         print("  dashboard       Launch live bundle browser (FastAPI + interactive graph)")
         print("  config          View or set OKF configuration")
         print("  init            Interactive bundle setup wizard")
-        print("  install         Set up agent integration (claude, opencode, copilot, cursor, windsurf, cline, mcp)")
+        print("  install         Set up agent integration (14 agents: claude, opencode, copilot, cursor, windsurf, cline, vscode, continue, zed, aider, codex, gemini, warp, roo, mcp)")
         print("  mcp             Start MCP server (stdio or HTTP). Use --install to register in client configs")
         print("  plugin          Manage parser plugins (list, install, uninstall)")
         print("  agent           Interactive REPL with persistent sessions, slash commands")

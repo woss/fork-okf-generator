@@ -200,6 +200,7 @@ html[data-theme="light"] #browse-content {
   transition:border-color .15s var(--ease), background .15s var(--ease);
 }
 #search:focus { border-color:var(--accent); background:var(--surface); }
+#search-no-results code { font-size:12px; }
 #search::placeholder { color:var(--text-3); }
 .filter-row { display:flex; flex-direction:column; gap:4px; margin-top:var(--sp-2); }
 .filter-row select {
@@ -688,7 +689,7 @@ html[data-theme="light"] .detail-tab:hover { background:rgba(0,0,0,.04); }
 
         <div id="hover-tag"></div>
 
-        <div id="status-pill"><span class="n" id="status-n">0</span><span> concepts </span><span style="opacity:.4">·</span><span> </span><span class="n" id="status-e">0</span><span> edges</span></div>
+        <div id="status-pill"><span class="n" id="status-n">0</span><span id="status-of"></span><span> concepts </span><span style="opacity:.4">·</span><span> </span><span class="n" id="status-e">0</span><span> edges</span><span id="graph-max-nodes" style="display:none">{GRAPH_MAX_NODES}</span></div>
 
          <div id="cosmos-toolbar">
            <div class="search-box">
@@ -836,7 +837,7 @@ async function getInfo() {
       if (t.indexOf('lang:') === 0 && t !== 'lang:manifest') langs[t.slice(5)] = (langs[t.slice(5)] || 0) + 1;
     });
   });
-  return { total: BUNDLE_DATA.nodes.length, types: types, languages: langs, name: BUNDLE_DATA.bundle_name || 'okf_bundle' };
+  return { total: BUNDLE_DATA.total_concepts || BUNDLE_DATA.nodes.length, types: types, languages: langs, name: BUNDLE_DATA.bundle_name || 'okf_bundle' };
 }
 
 async function getTypes() {
@@ -964,10 +965,25 @@ async function doSearch() {
   var t = qs('type-filter').value;
   var l = qs('lang-filter').value;
   var b = qs('bundle-select').value;
-  currentResults = await searchConcepts(q, t, l, DYNAMIC ? 9999 : 0);
+  currentResults = await searchConcepts(q, t, l, DYNAMIC ? 999999 : 0);
   if (b) currentResults = currentResults.filter(function(c) { return c.concept_id && c.concept_id.indexOf(b + '/') === 0; });
   renderTree(currentResults);
-  if (qs('detail').classList.contains('hidden')) renderLandingStats(currentResults);
+  if (qs('detail').classList.contains('hidden')) {
+    if (DYNAMIC) {
+      var infoData = await api('/api/info');
+      renderLandingStats(currentResults, infoData.total);
+    } else {
+      renderLandingStats(currentResults);
+    }
+  }
+  var noRes = qs('search-no-results');
+  if (!DYNAMIC && currentResults.length === 0 && (q || t || l || b)) {
+    if (!noRes) { noRes = document.createElement('div'); noRes.id = 'search-no-results'; var bc = qs('browse-content'); if (bc) bc.appendChild(noRes); else qs('main').appendChild(noRes); }
+    noRes.innerHTML = '<div style="padding:16px 24px;margin:8px 16px;text-align:center;color:var(--text-3);font-size:13px;line-height:1.6;background:var(--surface-2);border-radius:var(--r-md);border:1px solid var(--border)">No concepts match — only <span class="n" id="status-n2">0</span> of <span id="status-of2"></span> concepts loaded in this view.<br>Run <code style="background:var(--surface);padding:2px 6px;border-radius:4px">okf dashboard</code> for full-bundle search across all concepts.</div>';
+    var sn = qs('status-n'); var so = qs('status-of');
+    if (sn) qs('status-n2').textContent = sn.textContent;
+    if (so) qs('status-of2').textContent = so.textContent;
+  } else if (noRes) { noRes.remove(); }
 }
 qs('search').addEventListener('input', doSearch);
 qs('type-filter').addEventListener('change', doSearch);
@@ -1043,8 +1059,8 @@ function renderFolder(node, path) {
 }
 
 // ---- Landing ----
-function renderLandingStats(nodes) {
-  var types = {}, doms = {}, total = nodes.length;
+function renderLandingStats(nodes, totalOverride) {
+  var types = {}, doms = {}, total = totalOverride || nodes.length;
   nodes.forEach(function(n) {
     types[n.type] = (types[n.type] || 0) + 1;
     var parts = (n.concept_id || n.id || '').split('/');
@@ -1078,7 +1094,8 @@ function renderLandingStats(nodes) {
   var b = qs('bundle-select').value;
   var label = b || 'All Bundles';
   var heading = total + ' concepts' + (b ? ' in ' + b : '');
-  qs('landing').innerHTML = '<div class="eyebrow">' + esc(label) + '</div><h1>' + esc(heading) + '</h1><p class="sub">' + total + ' concepts across ' + Object.keys(doms).length + ' domains.</p>' + statHtml + domHtml;
+  var nDomains = Object.keys(doms).length;
+  qs('landing').innerHTML = '<div class="eyebrow">' + esc(label) + '</div><h1>' + esc(heading) + '</h1><p class="sub">' + total + ' concepts across ' + nDomains + ' domains.</p>' + statHtml + domHtml;
 }
 
 function breadcrumbNav(path) {
@@ -1131,11 +1148,15 @@ async function selectConcept(id) {
   // Pre-populate code tab in background
   var _ext = (c.resource || '').split('.').pop();
   var _lang = {js:'javascript',ts:'typescript',py:'python',rb:'ruby',rs:'rust',go:'go',java:'java',kt:'kotlin',cs:'csharp',cpp:'cpp',c:'c',sql:'sql',sh:'bash',yaml:'yaml',json:'json',html:'html',css:'css',toml:'ini',swift:'swift',php:'php',scala:'scala',dart:'dart'}[_ext] || _ext || '';
-  var _code = c.code || '';
-  if (_code) {
+  var _code = c.code || c.source || '';
+  if (_code && !/^Lines \d/.test(_code.trim())) {
     qs('code-split-source').innerHTML = '<pre><code class="language-' + _lang + '">' + esc(_code) + '</code></pre>';
     var _ce = qs('code-split-source').querySelector('code');
     if (_ce && window.Prism) Prism.highlightElement(_ce);
+  } else if (c.source && /^Lines \d/.test(c.source)) {
+    qs('code-split-source').innerHTML = '<div class="code-placeholder">Source code not embedded in this bundle view. Run <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px">okf dashboard</code> for source lookup, or open <code>' + esc(c.resource || '') + '</code> directly.</div>';
+  } else {
+    qs('code-split-source').innerHTML = '<div class="code-placeholder">No source code available for this concept.</div>';
   }
   showParseTreePrompt(id);
 
@@ -1373,16 +1394,16 @@ var _tsLangMap = {
   // kt: kotlin, cs: csharp, scala, dart, jl: julia, sql — no WASM builds on npm
 };
 var _tsWasmUrls = {
-  python:'https://cdn.jsdelivr.net/npm/tree-sitter-python@0.23.6/tree-sitter-python.wasm',
-  javascript:'https://cdn.jsdelivr.net/npm/tree-sitter-javascript@0.25.0/tree-sitter-javascript.wasm',
-  typescript:'https://cdn.jsdelivr.net/npm/tree-sitter-typescript@0.23.2/tree-sitter-typescript.wasm',
-  ruby:'https://cdn.jsdelivr.net/npm/tree-sitter-ruby@0.23.1/tree-sitter-ruby.wasm',
-  rust:'https://cdn.jsdelivr.net/npm/tree-sitter-rust@0.24.0/tree-sitter-rust.wasm',
-  go:'https://cdn.jsdelivr.net/npm/tree-sitter-go@0.25.0/tree-sitter-go.wasm',
-  java:'https://cdn.jsdelivr.net/npm/tree-sitter-java@0.23.5/tree-sitter-java.wasm',
-  cpp:'https://cdn.jsdelivr.net/npm/tree-sitter-cpp@0.23.4/tree-sitter-cpp.wasm',
-  c:'https://cdn.jsdelivr.net/npm/tree-sitter-c@0.23.6/tree-sitter-c.wasm',
-  php:'https://cdn.jsdelivr.net/npm/tree-sitter-php@0.23.6/tree-sitter-php.wasm',
+  python:'https://cdn.jsdelivr.net/npm/tree-sitter-python@0.20.4/tree-sitter-python.wasm',
+  javascript:'https://cdn.jsdelivr.net/npm/tree-sitter-javascript@0.20.4/tree-sitter-javascript.wasm',
+  typescript:'https://cdn.jsdelivr.net/npm/tree-sitter-typescript@0.20.5/tree-sitter-typescript.wasm',
+  ruby:'https://cdn.jsdelivr.net/npm/tree-sitter-ruby@0.20.1/tree-sitter-ruby.wasm',
+  rust:'https://cdn.jsdelivr.net/npm/tree-sitter-rust@0.20.4/tree-sitter-rust.wasm',
+  go:'https://cdn.jsdelivr.net/npm/tree-sitter-go@0.20.0/tree-sitter-go.wasm',
+  java:'https://cdn.jsdelivr.net/npm/tree-sitter-java@0.20.2/tree-sitter-java.wasm',
+  cpp:'https://cdn.jsdelivr.net/npm/tree-sitter-cpp@0.20.5/tree-sitter-cpp.wasm',
+  c:'https://cdn.jsdelivr.net/npm/tree-sitter-c@0.20.8/tree-sitter-c.wasm',
+  php:'https://cdn.jsdelivr.net/npm/tree-sitter-php@0.20.0/tree-sitter-php.wasm',
 };
 
 async function getTsParser(langName) {
@@ -1464,7 +1485,14 @@ async function renderParseTree(id) {
   var c = conceptCache[id] || __nodeById[id];
   if (!c) { container.innerHTML = '<div class="empty-note">No concept data.</div>'; return; }
 
-  var src = c.source || c.raw || c.code || c.body || '';
+  var src = c.code || c.body || '';
+  if (!src && c.source) {
+    if (/^Lines \d/.test(c.source)) {
+      container.innerHTML = '<div class="empty-note">Source code not embedded in this view. Use <code style="background:var(--surface-2);padding:2px 6px;border-radius:4px">okf dashboard</code> for source lookup.</div>';
+      return;
+    }
+    src = c.source;
+  }
   if (!src) { container.innerHTML = '<div class="empty-note">No source code available.</div>'; return; }
 
   var ext = (c.resource || '').split('.').pop();
@@ -1474,6 +1502,10 @@ async function renderParseTree(id) {
     return;
   }
 
+  if (src.length > 5000) {
+    container.innerHTML = '<div class="empty-note">Code too long for parse tree (' + src.length + ' chars). Switch to <strong>Source</strong> tab for code view.</div>';
+    return;
+  }
   container.innerHTML = '<div class="loading">Parsing…</div>';
   var parser = await getTsParser(langName);
   if (!parser) {
@@ -1899,6 +1931,7 @@ function _canvas2DSwitch() {
   canvas.style.pointerEvents = 'auto';
   _canvas2DInit();
   qs('status-n').textContent = _cosmosN;
+  qs('status-of').textContent = BUNDLE_DATA && BUNDLE_DATA.total_concepts > _cosmosN ? ' of ' + BUNDLE_DATA.total_concepts : '';
   qs('status-e').textContent = _cosmosEdges.length;
 }
 function _canvas2DUpdateClusterLabels(ps, view) {
@@ -1913,10 +1946,19 @@ function _canvas2DUpdateClusterLabels(ps, view) {
       if (!n) continue;
       var parts = (n.id || n.concept_id || '').split('/');
       if (parts[0] === dname || (parts.length > 1 && parts[0] === dname)) {
+        var nVisible = true;
+        if (_cosmosActiveTypes && !_cosmosActiveTypes.has(n.type)) nVisible = false;
+        if (_cosmosActiveBundles) {
+          var nb = (n.id || n.concept_id || '').split('/')[0] || 'root';
+          if (!_cosmosActiveBundles.has(nb)) nVisible = false;
+        }
+        if (_cosmosMatchSet !== null && !_cosmosMatchSet.has(ni)) nVisible = false;
+        if (!nVisible) continue;
         cx += ps[ni].x; cy += ps[ni].y; count++;
       }
     }
-    if (count === 0) continue;
+    if (count === 0) { els[di].style.display = 'none'; continue; }
+    els[di].style.display = '';
     cx /= count; cy /= count;
     var sx = cx * view.k + view.x;
     var sy = cy * view.k + view.y;
@@ -2068,17 +2110,25 @@ async function loadCosmosExplore() {
   _cosmosLoading = true;
   var loadingEl = qs('cosmos-loading');
 
-  // Dynamic mode: fetch graph from API
+  // Dynamic mode: fetch graph + bundle info
+  var _cosmosFullTypeCounts = {};
+  var _cosmosBundleNames = {};
   if (DYNAMIC) {
     try {
-      var gd = await api('/api/graph?max_nodes=500');
+      var gmn = parseInt((qs('graph-max-nodes') || {}).textContent, 10) || 2000;
+      var [gd, infoData] = await Promise.all([
+        api('/api/graph?max_nodes=' + gmn),
+        api('/api/info')
+      ]);
       _cosmosNodes = (gd.nodes || []).map(function(n) { return { id: n.id, title: n.label || n.title, type: n.group || n.type, resource: n.resource || '', tags: n.tags || [] }; });
       _cosmosEdges = (gd.edges || []).map(function(e) { return { source: e.from || e.source, target: e.to || e.target, type: e.type || 'related' }; });
+      _cosmosFullTypeCounts = infoData.types || {};
+      _cosmosFullBundleNames = infoData.name || '';
     } catch(e) {
       _cosmosNodes = []; _cosmosEdges = [];
     }
     _cosmosN = _cosmosNodes.length;
-    // Build domain map
+    // Build domain map from fetched nodes
     var doms = {};
     _cosmosNodes.forEach(function(n) {
       var parts = (n.id || '').split('/');
@@ -2101,6 +2151,13 @@ async function loadCosmosExplore() {
   });
 
   qs('status-n').textContent = _cosmosN;
+  qs('status-of').textContent = '';
+  if (DYNAMIC && _cosmosFullTypeCounts) {
+    var fullTotal = 0; for (var k in _cosmosFullTypeCounts) fullTotal += _cosmosFullTypeCounts[k];
+    if (fullTotal > _cosmosN) qs('status-of').textContent = ' of ' + fullTotal;
+  } else if (BUNDLE_DATA && BUNDLE_DATA.total_concepts > _cosmosN) {
+    qs('status-of').textContent = ' of ' + BUNDLE_DATA.total_concepts;
+  }
   qs('status-e').textContent = _cosmosEdges.length;
 
   var legendBody = qs('cosmos-legend-body');
@@ -2111,7 +2168,10 @@ async function loadCosmosExplore() {
     var row = document.createElement('div');
     row.className = 'legend-item';
     var cnt = typeCounts[t] || 0;
-    row.innerHTML = '<span class="dot" style="background:' + TYPE_COLORS[t] + '"></span><span>' + t + '</span><span class="count">' + cnt + '</span>';
+    var full = DYNAMIC && _cosmosFullTypeCounts ? _cosmosFullTypeCounts[t] || 0 : cnt;
+    var label = DYNAMIC ? cnt + ' / ' + full : '' + cnt;
+    row.innerHTML = '<span class="dot" style="background:' + TYPE_COLORS[t] + '"></span><span>' + t + '</span><span class="count">' + label + '</span>';
+    row.title = cnt + ' visible of ' + full + ' total';
     legendBody.appendChild(row);
   });
 
@@ -2122,9 +2182,12 @@ async function loadCosmosExplore() {
   typeList.innerHTML = '';
   Object.keys(TYPE_COLORS).forEach(function(t) {
     var cnt = typeCounts[t] || 0;
+    var full = DYNAMIC && _cosmosFullTypeCounts ? _cosmosFullTypeCounts[t] || 0 : cnt;
+    var label = DYNAMIC ? cnt + ' / ' + full : '' + cnt;
     var item = document.createElement('div');
     item.className = 'dropdown-item on';
-    item.innerHTML = '<div class="item-left"><span class="dot" style="background:' + TYPE_COLORS[t] + '"></span><span class="item-cb"></span><span>' + t + '</span></div><span class="item-count">' + cnt + '</span>';
+    item.innerHTML = '<div class="item-left"><span class="dot" style="background:' + TYPE_COLORS[t] + '"></span><span class="item-cb"></span><span>' + t + '</span></div><span class="item-count">' + label + '</span>';
+    item.title = cnt + ' visible of ' + full + ' total';
     item.onclick = function() {
       if (_cosmosActiveTypes.has(t)) { _cosmosActiveTypes.delete(t); item.classList.remove('on'); }
       else { _cosmosActiveTypes.add(t); item.classList.add('on'); }

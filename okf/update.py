@@ -539,6 +539,26 @@ def update_bundle(
     _write_summary(bundle_dir, all_concepts, source_root)
     _write_log(bundle_dir, new_concepts_parsed, len(all_concepts))
 
+    # ── Step 9b: Auto-enrich dirty concepts ─────────────────────────────────
+    if enable_enrich:
+        try:
+            from okf.lookup import load_bundle
+            from okf.enrich import run_enrich
+            dirty_raw = [c for c in load_bundle(bundle_dir) if c.get("concept_id") in dirty_ids]
+            if dirty_raw:
+                log.info(f"Auto-enriching {len(dirty_raw)} dirty concepts (--enrich)")
+                results = run_enrich(
+                    bundle_dir, dirty_raw, source_root,
+                    enable_lsp=False, enable_llm=True, llm_mode="base",
+                )
+                for name, result in results:
+                    status = "partial" if result.is_partial else "complete"
+                    log.info(f"  {name}: {result.enriched_count}/{result.total_count} ({status})")
+            else:
+                log.info("No dirty concepts to enrich")
+        except Exception as exc:
+            log.warning(f"Auto-enrich failed: {exc}")
+
     # ── Step 10: Update manifest file states ────────────────────────────────
     # Build from concept pool first (resource → concept_ids)
     new_file_states: dict[str, dict] = {}
